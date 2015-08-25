@@ -17,6 +17,9 @@ static ngx_int_t ngx_decode_base64_internal(ngx_str_t *dst, ngx_str_t *src,
     const u_char *basis);
 
 
+/*
+ * 将指定的字符串 src 转换成小写字符串存储在 dst 中
+ */
 void
 ngx_strlow(u_char *dst, u_char *src, size_t n)
 {
@@ -29,6 +32,9 @@ ngx_strlow(u_char *dst, u_char *src, size_t n)
 }
 
 
+/*
+ * 将字符串 src 的前 n 个字符复制存储于 dst 中
+ */
 u_char *
 ngx_cpystrn(u_char *dst, u_char *src, size_t n)
 {
@@ -52,7 +58,9 @@ ngx_cpystrn(u_char *dst, u_char *src, size_t n)
     return dst;
 }
 
-
+/*
+ * 新申请一块内存拷贝源字符串 src
+ */
 u_char *
 ngx_pstrdup(ngx_pool_t *pool, ngx_str_t *src)
 {
@@ -100,7 +108,9 @@ ngx_pstrdup(ngx_pool_t *pool, ngx_str_t *src)
  *    %C                        wchar
  */
 
-
+/*
+ * 按 ngx 标准格式输入字符串
+ */
 u_char * ngx_cdecl
 ngx_sprintf(u_char *buf, const char *fmt, ...)
 {
@@ -114,7 +124,9 @@ ngx_sprintf(u_char *buf, const char *fmt, ...)
     return p;
 }
 
-
+/*
+ * 按 ngx 标准输入最大 max 字节大小字符串
+ */
 u_char * ngx_cdecl
 ngx_snprintf(u_char *buf, size_t max, const char *fmt, ...)
 {
@@ -129,6 +141,9 @@ ngx_snprintf(u_char *buf, size_t max, const char *fmt, ...)
 }
 
 
+/*
+ * 按 ngx 标准输入最大指定范围大小字符串
+ */
 u_char * ngx_cdecl
 ngx_slprintf(u_char *buf, u_char *last, const char *fmt, ...)
 {
@@ -143,6 +158,9 @@ ngx_slprintf(u_char *buf, u_char *last, const char *fmt, ...)
 }
 
 
+/*
+ * ngx 标准输入
+ */
 u_char *
 ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 {
@@ -185,29 +203,29 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
             for ( ;; ) {
                 switch (*fmt) {
 
-                case 'u':
+                case 'u':                       //无符号
                     sign = 0;
                     fmt++;
                     continue;
 
-                case 'm':
+                case 'm':                       //最大宽度
                     max_width = 1;
                     fmt++;
                     continue;
 
-                case 'X':
+                case 'X':                       //大写16进制
                     hex = 2;
                     sign = 0;
                     fmt++;
                     continue;
 
-                case 'x':
+                case 'x':                       //小写16进制
                     hex = 1;
                     sign = 0;
                     fmt++;
                     continue;
 
-                case '.':
+                case '.':                       //浮点数精度
                     fmt++;
 
                     while (*fmt >= '0' && *fmt <= '9') {
@@ -231,7 +249,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
             switch (*fmt) {
 
-            case 'V':
+            case 'V':                       //ngx_str_t* 类型
                 v = va_arg(args, ngx_str_t *);
 
                 len = ngx_min(((size_t) (last - buf)), v->len);
@@ -240,7 +258,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 continue;
 
-            case 'v':
+            case 'v':                       //ngx_variable_value_t 类型
                 vv = va_arg(args, ngx_variable_value_t *);
 
                 len = ngx_min(((size_t) (last - buf)), vv->len);
@@ -249,7 +267,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 continue;
 
-            case 's':
+            case 's':                       //c 字符串
                 p = va_arg(args, u_char *);
 
                 if (slen == (size_t) -1) {
@@ -266,22 +284,22 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 continue;
 
-            case 'O':
+            case 'O':                       //off_t 类型
                 i64 = (int64_t) va_arg(args, off_t);
                 sign = 1;
                 break;
 
-            case 'P':
+            case 'P':                       //ngx_pid_t类型
                 i64 = (int64_t) va_arg(args, ngx_pid_t);
                 sign = 1;
                 break;
 
-            case 'T':
+            case 'T':                       //time_t 类型
                 i64 = (int64_t) va_arg(args, time_t);
                 sign = 1;
                 break;
 
-            case 'M':
+            case 'M':                       //nex_msec_t 类型
                 ms = (ngx_msec_t) va_arg(args, ngx_msec_t);
                 if ((ngx_msec_int_t) ms == -1) {
                     sign = 1;
@@ -292,7 +310,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 }
                 break;
 
-            case 'z':
+            case 'z':                       //ssize_t or size_t 类型
                 if (sign) {
                     i64 = (int64_t) va_arg(args, ssize_t);
                 } else {
@@ -300,7 +318,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 }
                 break;
 
-            case 'i':
+            case 'i':                       //ngx_int_t or ngx_uint_t 类型
                 if (sign) {
                     i64 = (int64_t) va_arg(args, ngx_int_t);
                 } else {
@@ -313,7 +331,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 break;
 
-            case 'd':
+            case 'd':                       //int or u_int　类型
                 if (sign) {
                     i64 = (int64_t) va_arg(args, int);
                 } else {
@@ -321,7 +339,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 }
                 break;
 
-            case 'l':
+            case 'l':                       //long or u_long 类型
                 if (sign) {
                     i64 = (int64_t) va_arg(args, long);
                 } else {
@@ -329,7 +347,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 }
                 break;
 
-            case 'D':
+            case 'D':                       //int32_t
                 if (sign) {
                     i64 = (int64_t) va_arg(args, int32_t);
                 } else {
@@ -337,7 +355,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 }
                 break;
 
-            case 'L':
+            case 'L':                       //int64_t
                 if (sign) {
                     i64 = va_arg(args, int64_t);
                 } else {
@@ -345,7 +363,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 }
                 break;
 
-            case 'A':
+            case 'A':                       //ngx_atomic_int_t
                 if (sign) {
                     i64 = (int64_t) va_arg(args, ngx_atomic_int_t);
                 } else {
@@ -399,13 +417,13 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 continue;
 
 #if !(NGX_WIN32)
-            case 'r':
+            case 'r':                   //rlim_t
                 i64 = (int64_t) va_arg(args, rlim_t);
                 sign = 1;
                 break;
 #endif
 
-            case 'p':
+            case 'p':                   //void*
                 ui64 = (uintptr_t) va_arg(args, void *);
                 hex = 2;
                 sign = 0;
@@ -413,20 +431,20 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 width = NGX_PTR_SIZE * 2;
                 break;
 
-            case 'c':
+            case 'c':                   //char
                 d = va_arg(args, int);
                 *buf++ = (u_char) (d & 0xff);
                 fmt++;
 
                 continue;
 
-            case 'Z':
+            case 'Z':                   //'\0'
                 *buf++ = '\0';
                 fmt++;
 
                 continue;
 
-            case 'N':
+            case 'N':                   //'\n'
 #if (NGX_WIN32)
                 *buf++ = CR;
                 if (buf < last) {
@@ -439,7 +457,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 continue;
 
-            case '%':
+            case '%':                   //%s
                 *buf++ = '%';
                 fmt++;
 
@@ -473,7 +491,9 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
     return buf;
 }
 
-
+/*
+ * 将 num ui64 标准输入至起始为 buf，截止地址为 last 的空间中 
+ */
 static u_char *
 ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
     ngx_uint_t hexadecimal, ngx_uint_t width)
@@ -485,12 +505,12 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
                         */
     size_t          len;
     uint32_t        ui32;
-    static u_char   hex[] = "0123456789abcdef";
+    static u_char   hex[] = "0123456789abcdef";                     //16进制字符数组
     static u_char   HEX[] = "0123456789ABCDEF";
 
     p = temp + NGX_INT64_LEN;
 
-    if (hexadecimal == 0) {
+    if (hexadecimal == 0) {                                         //非16进制
 
         if (ui64 <= (uint64_t) NGX_MAX_UINT32_VALUE) {
 
@@ -521,7 +541,7 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
             } while (ui64 /= 10);
         }
 
-    } else if (hexadecimal == 1) {
+    } else if (hexadecimal == 1) {                                  //小写16进制表示法
 
         do {
 
@@ -530,7 +550,7 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
 
         } while (ui64 >>= 4);
 
-    } else { /* hexadecimal == 2 */
+    } else { /* hexadecimal == 2 */                                 //大写16进制表示法
 
         do {
 
@@ -542,15 +562,15 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
 
     /* zero or space padding */
 
-    len = (temp + NGX_INT64_LEN) - p;
+    len = (temp + NGX_INT64_LEN) - p;                               //数据长度
 
-    while (len++ < width && buf < last) {
+    while (len++ < width && buf < last) {                           //尾部置空
         *buf++ = zero;
     }
 
     /* number safe copy */
 
-    len = (temp + NGX_INT64_LEN) - p;
+    len = (temp + NGX_INT64_LEN) - p;                               //字符长度
 
     if (buf + len > last) {
         len = last - buf;
@@ -566,7 +586,9 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
  * to avoid libc locale overhead.  Besides, we use the ngx_uint_t's
  * instead of the u_char's, because they are slightly faster.
  */
-
+/*
+ * 比较两个字符串是否相等,不区分大小写
+ */
 ngx_int_t
 ngx_strcasecmp(u_char *s1, u_char *s2)
 {
@@ -593,6 +615,9 @@ ngx_strcasecmp(u_char *s1, u_char *s2)
 }
 
 
+/*
+ * 比较两个字符串前n个字符是否相等
+ */
 ngx_int_t
 ngx_strncasecmp(u_char *s1, u_char *s2, size_t n)
 {
@@ -621,7 +646,9 @@ ngx_strncasecmp(u_char *s1, u_char *s2, size_t n)
     return 0;
 }
 
-
+/*
+ * 在 s1 的前 len 个字符串中查找 s2, 如果存在就返回 s2 在 s1 中的位置，如果没有找到，返回 NULL
+ */
 u_char *
 ngx_strnstr(u_char *s1, char *s2, size_t len)
 {
@@ -662,6 +689,9 @@ ngx_strnstr(u_char *s1, char *s2, size_t len)
  * must be length of the second substring - 1.
  */
 
+/*
+ * 在 s1 中查找 s2 的前 n 个字符， 如果存在返回 pos，不存在返回null
+ */
 u_char *
 ngx_strstrn(u_char *s1, char *s2, size_t n)
 {
@@ -685,6 +715,9 @@ ngx_strstrn(u_char *s1, char *s2, size_t n)
 }
 
 
+/*
+ * 在 s1 中查找 s2 的前 n 个字符(不区分大小写)， 如果存在返回 pos，不存在返回null
+ */
 u_char *
 ngx_strcasestrn(u_char *s1, char *s2, size_t n)
 {
@@ -717,6 +750,9 @@ ngx_strcasestrn(u_char *s1, char *s2, size_t n)
  * must be length of the second substring - 1.
  */
 
+/*
+ * 在指定的范围内查找 s2, 如果存在返回pos，不存在返回NULL
+ */
 u_char *
 ngx_strlcasestrn(u_char *s1, u_char *last, u_char *s2, size_t n)
 {
@@ -743,7 +779,9 @@ ngx_strlcasestrn(u_char *s1, u_char *last, u_char *s2, size_t n)
     return --s1;
 }
 
-
+/*
+ * 逆向比较两个字符串是否相等
+ */
 ngx_int_t
 ngx_rstrncmp(u_char *s1, u_char *s2, size_t n)
 {
@@ -767,6 +805,9 @@ ngx_rstrncmp(u_char *s1, u_char *s2, size_t n)
 }
 
 
+/*
+ * 逆向比较两个字符串是否相等，不区分大小写
+ */
 ngx_int_t
 ngx_rstrncasecmp(u_char *s1, u_char *s2, size_t n)
 {
@@ -801,7 +842,9 @@ ngx_rstrncasecmp(u_char *s1, u_char *s2, size_t n)
     }
 }
 
-
+/*
+ * 判断两个字符串 s1 s2 是否相同
+ */
 ngx_int_t
 ngx_memn2cmp(u_char *s1, u_char *s2, size_t n1, size_t n2)
 {
@@ -826,7 +869,9 @@ ngx_memn2cmp(u_char *s1, u_char *s2, size_t n1, size_t n2)
     return z;
 }
 
-
+/*
+ * 判断 dns 字符串 s1 s2 是否相同
+ */
 ngx_int_t
 ngx_dns_strcmp(u_char *s1, u_char *s2)
 {
@@ -857,7 +902,9 @@ ngx_dns_strcmp(u_char *s1, u_char *s2)
     }
 }
 
-
+/*
+ * 判断两个文件名是否相同
+ */
 ngx_int_t
 ngx_filename_cmp(u_char *s1, u_char *s2, size_t n)
 {
@@ -898,6 +945,9 @@ ngx_filename_cmp(u_char *s1, u_char *s2, size_t n)
 }
 
 
+/*
+ * 将字符串 line 转换成 int
+ */
 ngx_int_t
 ngx_atoi(u_char *line, size_t n)
 {
@@ -927,7 +977,9 @@ ngx_atoi(u_char *line, size_t n)
 
 
 /* parse a fixed point number, e.g., ngx_atofp("10.5", 4, 2) returns 1050 */
-
+/*
+ * 将字符串 line 按指数形式转换成 int
+ */
 ngx_int_t
 ngx_atofp(u_char *line, size_t n, size_t point)
 {
@@ -981,7 +1033,9 @@ ngx_atofp(u_char *line, size_t n, size_t point)
     return value;
 }
 
-
+/*
+ * 将字符串line 转换成 ssize_t
+ */
 ssize_t
 ngx_atosz(u_char *line, size_t n)
 {
@@ -1009,7 +1063,9 @@ ngx_atosz(u_char *line, size_t n)
     return value;
 }
 
-
+/*
+ * 将字符串 line 转换成 off_t
+ */
 off_t
 ngx_atoof(u_char *line, size_t n)
 {
@@ -1038,6 +1094,9 @@ ngx_atoof(u_char *line, size_t n)
 }
 
 
+/*
+ * 将字符串转换成 time_t
+ */
 time_t
 ngx_atotm(u_char *line, size_t n)
 {
@@ -1065,7 +1124,9 @@ ngx_atotm(u_char *line, size_t n)
     return value;
 }
 
-
+/*
+ * 将字符串line 按十六进制转换成 int
+ */
 ngx_int_t
 ngx_hextoi(u_char *line, size_t n)
 {
@@ -1103,7 +1164,9 @@ ngx_hextoi(u_char *line, size_t n)
     return value;
 }
 
-
+/*
+ * 将源字符串 src 按十六进制转换存储在 dst中
+ */
 u_char *
 ngx_hex_dump(u_char *dst, u_char *src, size_t len)
 {
@@ -1117,7 +1180,9 @@ ngx_hex_dump(u_char *dst, u_char *src, size_t len)
     return dst;
 }
 
-
+/*
+ * 将src编码存储在dst中
+ */
 void
 ngx_encode_base64(ngx_str_t *dst, ngx_str_t *src)
 {
@@ -1128,6 +1193,9 @@ ngx_encode_base64(ngx_str_t *dst, ngx_str_t *src)
 }
 
 
+/*
+ * 将url src 编码存储在 dst 中
+ */
 void
 ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
 {
@@ -1137,7 +1205,9 @@ ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
     ngx_encode_base64_internal(dst, src, basis64, 0);
 }
 
-
+/*
+ * 编码
+ */
 static void
 ngx_encode_base64_internal(ngx_str_t *dst, ngx_str_t *src, const u_char *basis,
     ngx_uint_t padding)
@@ -1182,6 +1252,9 @@ ngx_encode_base64_internal(ngx_str_t *dst, ngx_str_t *src, const u_char *basis,
 }
 
 
+/*
+ * 解码
+ */
 ngx_int_t
 ngx_decode_base64(ngx_str_t *dst, ngx_str_t *src)
 {
@@ -1235,7 +1308,9 @@ ngx_decode_base64url(ngx_str_t *dst, ngx_str_t *src)
     return ngx_decode_base64_internal(dst, src, basis64);
 }
 
-
+/*
+ * 解码
+ */
 static ngx_int_t
 ngx_decode_base64_internal(ngx_str_t *dst, ngx_str_t *src, const u_char *basis)
 {
@@ -1291,6 +1366,9 @@ ngx_decode_base64_internal(ngx_str_t *dst, ngx_str_t *src, const u_char *basis)
  *    0xffffffff              error
  */
 
+/*
+ * 解码 utf8
+ */
 uint32_t
 ngx_utf8_decode(u_char **p, size_t n)
 {
@@ -1347,7 +1425,9 @@ ngx_utf8_decode(u_char **p, size_t n)
     return 0xffffffff;
 }
 
-
+/*
+ * 获取 utf8 字符的长度
+ */
 size_t
 ngx_utf8_length(u_char *p, size_t n)
 {
@@ -1374,7 +1454,9 @@ ngx_utf8_length(u_char *p, size_t n)
     return len;
 }
 
-
+/*
+ * 拷贝
+ */
 u_char *
 ngx_utf8_cpystrn(u_char *dst, u_char *src, size_t n, size_t len)
 {
@@ -1843,7 +1925,9 @@ ngx_escape_json(u_char *dst, u_char *src, size_t size)
     return (uintptr_t) dst;
 }
 
-
+/*
+ * 红黑树插入节点
+ */
 void
 ngx_str_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
@@ -1884,6 +1968,9 @@ ngx_str_rbtree_insert_value(ngx_rbtree_node_t *temp,
 }
 
 
+/*
+ * 查找指定节点
+ */
 ngx_str_node_t *
 ngx_str_rbtree_lookup(ngx_rbtree_t *rbtree, ngx_str_t *val, uint32_t hash)
 {
@@ -1929,6 +2016,9 @@ ngx_str_rbtree_lookup(ngx_rbtree_t *rbtree, ngx_str_t *val, uint32_t hash)
 
 /* ngx_sort() is implemented as insertion sort because we need stable sort */
 
+/*
+ * 排序
+ */
 void
 ngx_sort(void *base, size_t n, size_t size,
     ngx_int_t (*cmp)(const void *, const void *))

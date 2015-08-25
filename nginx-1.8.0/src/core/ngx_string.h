@@ -12,19 +12,25 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/*
+ * ngx_str 结构体定义
+ */
 typedef struct {
-    size_t      len;
-    u_char     *data;
+    size_t      len;        //string长度
+    u_char     *data;       //数据指针
 } ngx_str_t;
 
-
+/*
+ * ngx_keyval 结构体定义
+ */
 typedef struct {
     ngx_str_t   key;
     ngx_str_t   value;
 } ngx_keyval_t;
 
-
+/*
+ * ngx_variable_value_t 结构体定义
+ */
 typedef struct {
     unsigned    len:28;
 
@@ -209,7 +215,9 @@ void ngx_unescape_uri(u_char **dst, u_char **src, size_t size, ngx_uint_t type);
 uintptr_t ngx_escape_html(u_char *dst, u_char *src, size_t size);
 uintptr_t ngx_escape_json(u_char *dst, u_char *src, size_t size);
 
-
+/*
+ * 红黑树节点结构体 ngx_str_node_t 定义
+ */
 typedef struct {
     ngx_rbtree_node_t         node;
     ngx_str_t                 str;
