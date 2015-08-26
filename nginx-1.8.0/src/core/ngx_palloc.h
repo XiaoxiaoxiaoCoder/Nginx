@@ -17,9 +17,9 @@
  * NGX_MAX_ALLOC_FROM_POOL should be (ngx_pagesize - 1), i.e. 4095 on x86.
  * On Windows NT it decreases a number of locked pages in a kernel.
  */
-#define NGX_MAX_ALLOC_FROM_POOL  (ngx_pagesize - 1)
+#define NGX_MAX_ALLOC_FROM_POOL  (ngx_pagesize - 1)             //页最大大小
 
-#define NGX_DEFAULT_POOL_SIZE    (16 * 1024)
+#define NGX_DEFAULT_POOL_SIZE    (16 * 1024)                    //默认页大小
 
 #define NGX_POOL_ALIGNMENT       16
 #define NGX_MIN_POOL_SIZE                                                     \
@@ -31,40 +31,52 @@ typedef void (*ngx_pool_cleanup_pt)(void *data);
 
 typedef struct ngx_pool_cleanup_s  ngx_pool_cleanup_t;
 
+/*
+ * ngx_pool_cleanup_s　结构体定义
+ */
 struct ngx_pool_cleanup_s {
-    ngx_pool_cleanup_pt   handler;
-    void                 *data;
-    ngx_pool_cleanup_t   *next;
+    ngx_pool_cleanup_pt   handler;          //cleanup 函数指针
+    void                 *data;             //cleanup 的数据指针
+    ngx_pool_cleanup_t   *next;             //下一个clanup
 };
 
 
 typedef struct ngx_pool_large_s  ngx_pool_large_t;
 
+/*
+ * ngx_pool_large_s 结构体定义
+ */
 struct ngx_pool_large_s {
-    ngx_pool_large_t     *next;
-    void                 *alloc;
+    ngx_pool_large_t     *next;             //下一个 ngx_pool_large_s 指针
+    void                 *alloc;            //内存指针
 };
 
-
+/*
+ * ngx_pool_data_t 结构体定义
+ */
 typedef struct {
-    u_char               *last;
-    u_char               *end;
-    ngx_pool_t           *next;
-    ngx_uint_t            failed;
+    u_char               *last;             //空闲区起始地址
+    u_char               *end;              //data区结束地址
+    ngx_pool_t           *next;             //ngx_pool_s　指针
+    ngx_uint_t            failed;           //失败次数
 } ngx_pool_data_t;
 
-
+/*
+ * ngx_pool_s 结构体定义
+ */
 struct ngx_pool_s {
-    ngx_pool_data_t       d;
-    size_t                max;
-    ngx_pool_t           *current;
+    ngx_pool_data_t       d;                //数据区
+    size_t                max;              //当前空间大小
+    ngx_pool_t           *current;          //当前 pool 指针
     ngx_chain_t          *chain;
-    ngx_pool_large_t     *large;
-    ngx_pool_cleanup_t   *cleanup;
-    ngx_log_t            *log;
+    ngx_pool_large_t     *large;            //large 块内存起始指针
+    ngx_pool_cleanup_t   *cleanup;          //clean handler 链表头指针
+    ngx_log_t            *log;              //日志钩子函数
 };
 
-
+/*
+ * ngx_pool_cleanup_file_t 结构体定义
+ */
 typedef struct {
     ngx_fd_t              fd;
     u_char               *name;

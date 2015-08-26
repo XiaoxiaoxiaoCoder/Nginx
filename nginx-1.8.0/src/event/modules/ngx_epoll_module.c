@@ -148,6 +148,9 @@ static ngx_connection_t     ngx_eventfd_conn;
 
 static ngx_str_t      epoll_name = ngx_string("epoll");
 
+/*
+ * ngx_epoll_commands 声明
+ */
 static ngx_command_t  ngx_epoll_commands[] = {
 
     { ngx_string("epoll_events"),

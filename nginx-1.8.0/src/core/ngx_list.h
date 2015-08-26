@@ -15,24 +15,33 @@
 
 typedef struct ngx_list_part_s  ngx_list_part_t;
 
+/*
+ * ngx_list_part_s 结构体定义
+ */
 struct ngx_list_part_s {
-    void             *elts;
-    ngx_uint_t        nelts;
-    ngx_list_part_t  *next;
+    void             *elts;         //元素区起始地址
+    ngx_uint_t        nelts;        //已使用元素个数
+    ngx_list_part_t  *next;         //下一节点指针
 };
 
 
+/*
+ * ngx_list_t　结构体定义
+ */
 typedef struct {
-    ngx_list_part_t  *last;
-    ngx_list_part_t   part;
-    size_t            size;
-    ngx_uint_t        nalloc;
-    ngx_pool_t       *pool;
+    ngx_list_part_t  *last;         //最后一个节点
+    ngx_list_part_t   part;         //链表数据
+    size_t            size;         //元素数据大小
+    ngx_uint_t        nalloc;       //元素个数
+    ngx_pool_t       *pool;         //分配该链表的 ngx_pool_t 指针
 } ngx_list_t;
 
 
 ngx_list_t *ngx_list_create(ngx_pool_t *pool, ngx_uint_t n, size_t size);
 
+/*
+ * 初始化 ngx_list_t, 单个 part 按照指定的元素大小size与个数n初始化
+ */
 static ngx_inline ngx_int_t
 ngx_list_init(ngx_list_t *list, ngx_pool_t *pool, ngx_uint_t n, size_t size)
 {
