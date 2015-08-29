@@ -12,11 +12,13 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/*
+ * ngx_shm_t　共享内存结构体定义
+ */
 typedef struct {
-    u_char      *addr;
-    size_t       size;
-    ngx_str_t    name;
+    u_char      *addr;      //内存区起始地址
+    size_t       size;      //内存大小
+    ngx_str_t    name;      //内存名字
     ngx_log_t   *log;
     ngx_uint_t   exists;   /* unsigned  exists:1;  */
 } ngx_shm_t;

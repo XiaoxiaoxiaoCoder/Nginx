@@ -68,7 +68,7 @@ struct ngx_pool_s {
     ngx_pool_data_t       d;                //数据区
     size_t                max;              //当前空间大小
     ngx_pool_t           *current;          //当前 pool 指针
-    ngx_chain_t          *chain;
+    ngx_chain_t          *chain;            //ngx_chain_t 链表头指针
     ngx_pool_large_t     *large;            //large 块内存起始指针
     ngx_pool_cleanup_t   *cleanup;          //clean handler 链表头指针
     ngx_log_t            *log;              //日志钩子函数

@@ -31,7 +31,9 @@ static ngx_conf_enum_t  ngx_debug_points[] = {
     { ngx_null_string, 0 }
 };
 
-
+/*
+ * 核心模块配置文件指令集
+ */
 static ngx_command_t  ngx_core_commands[] = {
 
     { ngx_string("daemon"),
@@ -160,7 +162,9 @@ static ngx_command_t  ngx_core_commands[] = {
       ngx_null_command
 };
 
-
+/*
+ * 核心模块的上下文
+ */
 static ngx_core_module_t  ngx_core_module_ctx = {
     ngx_string("core"),
     ngx_core_module_create_conf,
@@ -168,6 +172,9 @@ static ngx_core_module_t  ngx_core_module_ctx = {
 };
 
 
+/*
+ * ngx_core_module 核心模块的定义
+ */
 ngx_module_t  ngx_core_module = {
     NGX_MODULE_V1,
     &ngx_core_module_ctx,                  /* module context */
@@ -337,6 +344,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+    /*初始化模块id*/
     ngx_max_module = 0;
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;
@@ -936,13 +944,15 @@ ngx_process_options(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ * ngx_core_module 模块创建配置项
+ */
 static void *
 ngx_core_module_create_conf(ngx_cycle_t *cycle)
 {
     ngx_core_conf_t  *ccf;
 
-    ccf = ngx_pcalloc(cycle->pool, sizeof(ngx_core_conf_t));
+    ccf = ngx_pcalloc(cycle->pool, sizeof(ngx_core_conf_t));        //分配配置项空间
     if (ccf == NULL) {
         return NULL;
     }
@@ -985,13 +995,15 @@ ngx_core_module_create_conf(ngx_cycle_t *cycle)
     return ccf;
 }
 
-
+/*
+ * 初始化 ngx_core_module 核心配置文件
+ */
 static char *
 ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
 {
     ngx_core_conf_t  *ccf = conf;
 
-    ngx_conf_init_value(ccf->daemon, 1);
+    ngx_conf_init_value(ccf->daemon, 1);                    //默认值
     ngx_conf_init_value(ccf->master, 1);
     ngx_conf_init_msec_value(ccf->timer_resolution, 0);
 
@@ -1345,7 +1357,9 @@ ngx_get_cpu_affinity(ngx_uint_t n)
     return ccf->cpu_affinity[ccf->cpu_affinity_n - 1];
 }
 
-
+/*
+ * 设置进程个数
+ */
 static char *
 ngx_set_worker_processes(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1354,7 +1368,7 @@ ngx_set_worker_processes(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ccf = (ngx_core_conf_t *) conf;
 
-    if (ccf->worker_processes != NGX_CONF_UNSET) {
+    if (ccf->worker_processes != NGX_CONF_UNSET) {      //已经设置过了
         return "is duplicate";
     }
 
@@ -1365,7 +1379,7 @@ ngx_set_worker_processes(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
-    ccf->worker_processes = ngx_atoi(value[1].data, value[1].len);
+    ccf->worker_processes = ngx_atoi(value[1].data, value[1].len);      //进程个数
 
     if (ccf->worker_processes == NGX_ERROR) {
         return "invalid value";

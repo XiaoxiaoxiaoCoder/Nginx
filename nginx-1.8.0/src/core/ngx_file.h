@@ -12,14 +12,16 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/*
+ * ngx_file_s 结构体定义
+ */
 struct ngx_file_s {
-    ngx_fd_t                   fd;
-    ngx_str_t                  name;
-    ngx_file_info_t            info;
+    ngx_fd_t                   fd;                  //文件fd
+    ngx_str_t                  name;                //文件名
+    ngx_file_info_t            info;                //文件相关信息
 
-    off_t                      offset;
-    off_t                      sys_offset;
+    off_t                      offset;              //配置文件中已经读取出的数据位置
+    off_t                      sys_offset;          //同上
 
     ngx_log_t                 *log;
 
@@ -44,42 +46,50 @@ struct ngx_file_s {
 typedef time_t (*ngx_path_manager_pt) (void *data);
 typedef void (*ngx_path_loader_pt) (void *data);
 
-
+/*
+ * ngx_path_t 结构体定义
+ */
 typedef struct {
-    ngx_str_t                  name;
-    size_t                     len;
-    size_t                     level[3];
+    ngx_str_t                  name;            //路径数据字符串
+    size_t                     len;             //目录长度
+    size_t                     level[3];        //临时目录的三级目录大小
 
     ngx_path_manager_pt        manager;
     ngx_path_loader_pt         loader;
     void                      *data;
 
-    u_char                    *conf_file;
-    ngx_uint_t                 line;
+    u_char                    *conf_file;       //该路径来源的配置文件
+    ngx_uint_t                 line;            //该路径来源配置文件中的行数，主要用户记录日志，排查错误
 } ngx_path_t;
 
-
+/*
+ * ngx_path_init_t 结构体定义
+ */
 typedef struct {
     ngx_str_t                  name;
     size_t                     level[3];
 } ngx_path_init_t;
 
-
+/*
+ * ngx_temp_file_t 结构体定义
+ */
 typedef struct {
-    ngx_file_t                 file;
+    ngx_file_t                 file;                    //文件相关信息
     off_t                      offset;
-    ngx_path_t                *path;
+    ngx_path_t                *path;                    //文件路径
     ngx_pool_t                *pool;
     char                      *warn;
 
-    ngx_uint_t                 access;
+    ngx_uint_t                 access;                  //访问权限
 
-    unsigned                   log_level:8;
-    unsigned                   persistent:1;
+    unsigned                   log_level:8;             //日志等级
+    unsigned                   persistent:1;            //是否已经存在
     unsigned                   clean:1;
 } ngx_temp_file_t;
 
-
+/*
+ * ngx_ext_rename_file_t 结构体定义
+ */
 typedef struct {
     ngx_uint_t                 access;
     ngx_uint_t                 path_access;
@@ -92,7 +102,9 @@ typedef struct {
     ngx_log_t                 *log;
 } ngx_ext_rename_file_t;
 
-
+/*
+ * ngx_copy_file_t 结构体定义
+ */
 typedef struct {
     off_t                      size;
     size_t                     buf_size;
@@ -109,6 +121,9 @@ typedef struct ngx_tree_ctx_s  ngx_tree_ctx_t;
 typedef ngx_int_t (*ngx_tree_init_handler_pt) (void *ctx, void *prev);
 typedef ngx_int_t (*ngx_tree_handler_pt) (ngx_tree_ctx_t *ctx, ngx_str_t *name);
 
+/*
+ * ngx_tree_ctx_s 结构体定义
+ */
 struct ngx_tree_ctx_s {
     off_t                      size;
     off_t                      fs_size;

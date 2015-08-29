@@ -449,7 +449,9 @@ typedef struct {
 #endif
 } ngx_event_conf_t;
 
-
+/*
+ * ngx_event_module_t 结构体定义， 事件模块
+ */
 typedef struct {
     ngx_str_t              *name;
 

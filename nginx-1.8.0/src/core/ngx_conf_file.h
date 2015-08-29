@@ -78,20 +78,23 @@
  * ngx_command_s 结构体定义
  */
 struct ngx_command_s {
-    ngx_str_t             name;                                                     //command 名字
-    ngx_uint_t            type;                                                     //command 类型
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);     //设置配置的函数
+    ngx_str_t             name;                                                     //command 名字 不可包含空格
+    ngx_uint_t            type;                                                     //设置 command 在配置文件位置的哪一部分使用是合法的可选值
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);     //从配置文件中把该指令的参数转换为合适的数据类型,并保存
+                                                                                    //到模块的配置结构体中
     ngx_uint_t            conf;                                                     //
-    ngx_uint_t            offset;                                                   //偏移量
+    ngx_uint_t            offset;                                                   //转换的值在配置结构体中的偏移
     void                 *post;                                                     //
 };
 
 #define ngx_null_command  { ngx_null_string, 0, NULL, 0, 0, NULL }
 
-
+/*
+ * ngx_open_file_s 结构体定义
+ */
 struct ngx_open_file_s {
-    ngx_fd_t              fd;
-    ngx_str_t             name;
+    ngx_fd_t              fd;                                                       //配置文件句柄 fd
+    ngx_str_t             name;                                                     //配置文件名字
 
     void                (*flush)(ngx_open_file_t *file, ngx_log_t *log);
     void                 *data;
@@ -101,9 +104,12 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1          0, 0, 0, 0, 0, 0, 1
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
+/*
+ * ngx_module_s 结构体定义
+ */
 struct ngx_module_s {
-    ngx_uint_t            ctx_index;
-    ngx_uint_t            index;
+    ngx_uint_t            ctx_index;                                //分类模块计数器，每个模块有自己所属的分类
+    ngx_uint_t            index;                                    //模块计数器，所有模块内的
 
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
@@ -112,13 +118,13 @@ struct ngx_module_s {
 
     ngx_uint_t            version;
 
-    void                 *ctx;
-    ngx_command_t        *commands;
-    ngx_uint_t            type;
+    void                 *ctx;                                      //模块所属上下文,每个模块指定自己的上下文,有着特定的公共接口
+    ngx_command_t        *commands;                                 //指令集,处理配置项
+    ngx_uint_t            type;                                     //模块的类型
 
     ngx_int_t           (*init_master)(ngx_log_t *log);
 
-    ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
+    ngx_int_t           (*init_module)(ngx_cycle_t *cycle);         //初始化所有模块时调用
 
     ngx_int_t           (*init_process)(ngx_cycle_t *cycle);
     ngx_int_t           (*init_thread)(ngx_cycle_t *cycle);
@@ -138,33 +144,40 @@ struct ngx_module_s {
 };
 
 
+/*
+ * ngx_core_module_t 结构体定义
+ */
 typedef struct {
-    ngx_str_t             name;
-    void               *(*create_conf)(ngx_cycle_t *cycle);
-    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
+    ngx_str_t             name;                                         //核心模块名称
+    void               *(*create_conf)(ngx_cycle_t *cycle);             //解析配置项前，Nginx框架会调用 create_conf 方法
+    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);   //解析配置项完成后, Nginx 框架会调用 init_conf 方法
 } ngx_core_module_t;
 
-
+/*
+ * ngx_conf_file_t 结构体定义
+ */
 typedef struct {
-    ngx_file_t            file;
-    ngx_buf_t            *buffer;
-    ngx_uint_t            line;
+    ngx_file_t            file;             //文件信息
+    ngx_buf_t            *buffer;           //配置文件数据
+    ngx_uint_t            line;             //文件行数
 } ngx_conf_file_t;
 
 
 typedef char *(*ngx_conf_handler_pt)(ngx_conf_t *cf,
     ngx_command_t *dummy, void *conf);
 
-
+/*
+ * ngx_conf_s 配置项结构体定义
+ */
 struct ngx_conf_s {
-    char                 *name;
-    ngx_array_t          *args;
+    char                 *name;                 //配置项名字
+    ngx_array_t          *args;                 //配置项参数
 
-    ngx_cycle_t          *cycle;
-    ngx_pool_t           *pool;
-    ngx_pool_t           *temp_pool;
-    ngx_conf_file_t      *conf_file;
-    ngx_log_t            *log;
+    ngx_cycle_t          *cycle;                //所属cycle
+    ngx_pool_t           *pool;                 //内存池
+    ngx_pool_t           *temp_pool;            //临时内存池
+    ngx_conf_file_t      *conf_file;            //配置文件信息
+    ngx_log_t            *log;                  //日志
 
     void                 *ctx;
     ngx_uint_t            module_type;
@@ -178,18 +191,26 @@ struct ngx_conf_s {
 typedef char *(*ngx_conf_post_handler_pt) (ngx_conf_t *cf,
     void *data, void *conf);
 
+/*
+ * ngx_conf_post_t 结构体定义
+ */
 typedef struct {
     ngx_conf_post_handler_pt  post_handler;
 } ngx_conf_post_t;
 
 
+/*
+ * ngx_conf_deprecated_t 结构体定义
+ */
 typedef struct {
     ngx_conf_post_handler_pt  post_handler;
     char                     *old_name;
     char                     *new_name;
 } ngx_conf_deprecated_t;
 
-
+/*
+ * ngx_conf_num_bounds_t 结构体定义
+ */
 typedef struct {
     ngx_conf_post_handler_pt  post_handler;
     ngx_int_t                 low;
@@ -197,6 +218,9 @@ typedef struct {
 } ngx_conf_num_bounds_t;
 
 
+/*
+ * ngx_conf_enum_t 结构体定义
+ */
 typedef struct {
     ngx_str_t                 name;
     ngx_uint_t                value;
@@ -205,6 +229,9 @@ typedef struct {
 
 #define NGX_CONF_BITMASK_SET  1
 
+/*
+ * ngx_conf_bitmask_t 结构体定义
+ */
 typedef struct {
     ngx_str_t                 name;
     ngx_uint_t                mask;

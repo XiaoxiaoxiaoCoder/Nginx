@@ -78,7 +78,9 @@ ngx_atomic_t  *ngx_stat_waiting = &ngx_stat_waiting0;
 #endif
 
 
-
+/*
+ * 事件核心模块命令集,决定如何处理自己感兴趣的配置项
+ */
 static ngx_command_t  ngx_events_commands[] = {
 
     { ngx_string("events"),
@@ -91,14 +93,18 @@ static ngx_command_t  ngx_events_commands[] = {
       ngx_null_command
 };
 
-
+/*
+ * 核心事件模块的上下文
+ */
 static ngx_core_module_t  ngx_events_module_ctx = {
     ngx_string("events"),
-    NULL,
+    NULL,                                   //不需要创建配置,事件模块
     ngx_event_init_conf
 };
 
-
+/*
+ * 事件核心模块，用于管理事件
+ */
 ngx_module_t  ngx_events_module = {
     NGX_MODULE_V1,
     &ngx_events_module_ctx,                /* module context */
@@ -120,49 +126,49 @@ static ngx_str_t  event_core_name = ngx_string("event_core");
 
 static ngx_command_t  ngx_event_core_commands[] = {
 
-    { ngx_string("worker_connections"),
+    { ngx_string("worker_connections"),                 //连接池大小，也就是每个worker进程中支持的TCP最大链接数
       NGX_EVENT_CONF|NGX_CONF_TAKE1,
       ngx_event_connections,
       0,
       0,
       NULL },
 
-    { ngx_string("connections"),
+    { ngx_string("connections"),                        //连接池大小，与 worker_connections 配置项意义相同
       NGX_EVENT_CONF|NGX_CONF_TAKE1,
       ngx_event_connections,
       0,
       0,
       NULL },
 
-    { ngx_string("use"),
+    { ngx_string("use"),                                //确定使用一个事件模块作为事件驱动
       NGX_EVENT_CONF|NGX_CONF_TAKE1,
       ngx_event_use,
       0,
       0,
       NULL },
 
-    { ngx_string("multi_accept"),
+    { ngx_string("multi_accept"),                       //epoll 驱动模式下，意味着在接收到一个新连接事件时，调用accept以尽可能多的接收链接
       NGX_EVENT_CONF|NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       0,
       offsetof(ngx_event_conf_t, multi_accept),
       NULL },
 
-    { ngx_string("accept_mutex"),
+    { ngx_string("accept_mutex"),                       //确定是否使用 accept_mutex 负载均衡锁，默认为开启
       NGX_EVENT_CONF|NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       0,
       offsetof(ngx_event_conf_t, accept_mutex),
       NULL },
 
-    { ngx_string("accept_mutex_delay"),
+    { ngx_string("accept_mutex_delay"),                 //启用 accept_mutex 负载均衡后，延迟 accept_mutex_delay 毫秒后再试图处理新连接事件
       NGX_EVENT_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_msec_slot,
       0,
       offsetof(ngx_event_conf_t, accept_mutex_delay),
       NULL },
 
-    { ngx_string("debug_connection"),
+    { ngx_string("debug_connection"),                   //需要对来着指定IP的TCP链接打印 debug 级别的调试日志
       NGX_EVENT_CONF|NGX_CONF_TAKE1,
       ngx_event_debug_connection,
       0,
@@ -181,7 +187,9 @@ ngx_event_module_t  ngx_event_core_module_ctx = {
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
-
+/*
+ * 核心模块，决定使用哪种事件驱动机制，以及如何管理事件
+ */
 ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1,
     &ngx_event_core_module_ctx,            /* module context */
@@ -884,6 +892,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* count the number of the event modules and set up their indices */
 
+    /*初始换所有事件模块的 ctx_index 序号*/
     ngx_event_max_module = 0;
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
@@ -893,11 +902,12 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_modules[i]->ctx_index = ngx_event_max_module++;
     }
 
+    /*分配指针数组，存储所有事件模块生成的配置项结构体指针*/
     ctx = ngx_pcalloc(cf->pool, sizeof(void *));
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
     }
-
+    /*分配需要存储的配置结构体数组指针*/
     *ctx = ngx_pcalloc(cf->pool, ngx_event_max_module * sizeof(void *));
     if (*ctx == NULL) {
         return NGX_CONF_ERROR;
@@ -905,6 +915,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *(void **) conf = ctx;
 
+    /*调用所有事件模块解析的 create_conf 方法*/
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
             continue;
@@ -925,6 +936,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cf->module_type = NGX_EVENT_MODULE;
     cf->cmd_type = NGX_EVENT_CONF;
 
+    /*为所有事件模块解析 nginx.conf 配置文件*/
     rv = ngx_conf_parse(cf, NULL);
 
     *cf = pcf;
@@ -932,6 +944,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (rv != NGX_CONF_OK)
         return rv;
 
+    /*调用所有事件模块的 init_conf 方法*/
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
             continue;

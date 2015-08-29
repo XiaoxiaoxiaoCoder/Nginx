@@ -21,7 +21,9 @@ ngx_uint_t  ngx_file_aio = 1;
 
 #endif
 
-
+/*
+ * 读取配置文件数据
+ */
 ssize_t
 ngx_read_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 {

@@ -17,16 +17,19 @@ typedef void *            ngx_buf_tag_t;
 
 typedef struct ngx_buf_s  ngx_buf_t;
 
+/*
+ * ngx_buf_s 结构体定义
+ */
 struct ngx_buf_s {
-    u_char          *pos;
-    u_char          *last;
+    u_char          *pos;               //文件缓冲区中已经读取的数据大小
+    u_char          *last;              //文件缓冲区中数据的结束地址
     off_t            file_pos;
     off_t            file_last;
 
-    u_char          *start;         /* start of buffer */
-    u_char          *end;           /* end of buffer */
+    u_char          *start;             //缓冲区起始地址    /* start of buffer */
+    u_char          *end;               //缓冲区结束地址    /* end of buffer */
     ngx_buf_tag_t    tag;
-    ngx_file_t      *file;
+    ngx_file_t      *file;              //文件信息
     ngx_buf_t       *shadow;
 
 
@@ -55,13 +58,18 @@ struct ngx_buf_s {
     /* STUB */ int   num;
 };
 
-
+/*
+ * ngx_chain_s 结构体定义
+ */
 struct ngx_chain_s {
-    ngx_buf_t    *buf;
-    ngx_chain_t  *next;
+    ngx_buf_t    *buf;          //ngx_buf_t 指针，数据区
+    ngx_chain_t  *next;         //下一节点指针
 };
 
 
+/*
+ * ngx_bufs_t 结构体定义
+ */
 typedef struct {
     ngx_int_t    num;
     size_t       size;
@@ -77,6 +85,9 @@ typedef void (*ngx_output_chain_aio_pt)(ngx_output_chain_ctx_t *ctx,
     ngx_file_t *file);
 #endif
 
+/*
+ * ngx_output_chain_ctx_s 结构体定义
+ */
 struct ngx_output_chain_ctx_s {
     ngx_buf_t                   *buf;
     ngx_chain_t                 *in;
@@ -118,7 +129,9 @@ struct ngx_output_chain_ctx_s {
     void                        *filter_ctx;
 };
 
-
+/*
+ * ngx_chain_write_ctx_t 结构体定义
+ */
 typedef struct {
     ngx_chain_t                 *out;
     ngx_chain_t                **last;

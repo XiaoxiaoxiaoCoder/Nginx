@@ -57,7 +57,9 @@ static ngx_uint_t argument_number[] = {
     NGX_CONF_TAKE7
 };
 
-
+/*
+ * 初始化 ngx_conf_t 结构体
+ */
 char *
 ngx_conf_param(ngx_conf_t *cf)
 {
@@ -96,7 +98,9 @@ ngx_conf_param(ngx_conf_t *cf)
     return rv;
 }
 
-
+/*
+ * 解析配置文件
+ */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -120,7 +124,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
         /* open configuration file */
 
-        fd = ngx_open_file(filename->data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);
+        fd = ngx_open_file(filename->data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);          //打开文件
         if (fd == NGX_INVALID_FILE) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
                                ngx_open_file_n " \"%s\" failed",
@@ -243,7 +247,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
-
+        /*解析配置项*/
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -279,7 +283,9 @@ done:
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 解析配置项
+ */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 {
@@ -293,14 +299,15 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
     found = 0;
 
+    /*暴力寻找，从所有模块中查找*/
     for (i = 0; ngx_modules[i]; i++) {
 
-        cmd = ngx_modules[i]->commands;
+        cmd = ngx_modules[i]->commands;                             //模块配置指令集
         if (cmd == NULL) {
             continue;
         }
 
-        for ( /* void */ ; cmd->name.len; cmd++) {
+        for ( /* void */ ; cmd->name.len; cmd++) {                  //从当前模块的配置命令集中查找
 
             if (name->len != cmd->name.len) {
                 continue;
@@ -313,7 +320,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             found = 1;
 
             if (ngx_modules[i]->type != NGX_CONF_MODULE
-                && ngx_modules[i]->type != cf->module_type)
+                && ngx_modules[i]->type != cf->module_type)         //模块类型是否匹配
             {
                 continue;
             }
@@ -340,7 +347,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             /* is the directive's argument count right ? */
 
-            if (!(cmd->type & NGX_CONF_ANY)) {
+            if (!(cmd->type & NGX_CONF_ANY)) {                      //检查配置参数个数是否正确
 
                 if (cmd->type & NGX_CONF_FLAG) {
 
@@ -388,6 +395,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
+            /*设置配置项*/
             rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {
@@ -426,7 +434,9 @@ invalid:
     return NGX_ERROR;
 }
 
-
+/*
+ * 读取配置文件的token信息
+ */
 static ngx_int_t
 ngx_conf_read_token(ngx_conf_t *cf)
 {
@@ -453,11 +463,11 @@ ngx_conf_read_token(ngx_conf_t *cf)
     start = b->pos;
     start_line = cf->conf_file->line;
 
-    file_size = ngx_file_size(&cf->conf_file->file.info);
+    file_size = ngx_file_size(&cf->conf_file->file.info);                       //文件大小
 
     for ( ;; ) {
 
-        if (b->pos >= b->last) {
+        if (b->pos >= b->last) {                                                //缓冲区中是否还有数据                                       
 
             if (cf->conf_file->file.offset >= file_size) {
 
@@ -479,7 +489,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 return NGX_CONF_FILE_DONE;
             }
 
-            len = b->pos - start;
+            len = b->pos - start;                                           //已读取的大小
 
             if (len == NGX_CONF_BUFFER) {
                 cf->conf_file->line = start_line;
@@ -507,12 +517,13 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 ngx_memmove(b->start, start, len);
             }
 
-            size = (ssize_t) (file_size - cf->conf_file->file.offset);
+            size = (ssize_t) (file_size - cf->conf_file->file.offset);      //配置文件剩余未读取数据大小
 
             if (size > b->end - (b->start + len)) {
                 size = b->end - (b->start + len);
             }
 
+            /*读取配置内容*/
             n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
                               cf->conf_file->file.offset);
 
@@ -535,7 +546,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
         ch = *b->pos++;
 
-        if (ch == LF) {
+        if (ch == LF) {                         //换行
             cf->conf_file->line++;
 
             if (sharp_comment) {
@@ -543,7 +554,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
             }
         }
 
-        if (sharp_comment) {
+        if (sharp_comment) {                    //注释
             continue;
         }
 
@@ -611,7 +622,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
                 return NGX_CONF_BLOCK_DONE;
 
-            case '#':
+            case '#':                                               //注释
                 sharp_comment = 1;
                 continue;
 
@@ -668,19 +679,19 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 }
 
             } else if (ch == ' ' || ch == '\t' || ch == CR || ch == LF
-                       || ch == ';' || ch == '{')
+                       || ch == ';' || ch == '{')       //找到一个配置项
             {
                 last_space = 1;
-                found = 1;
+                found = 1;                              //找到了哇
             }
 
             if (found) {
-                word = ngx_array_push(cf->args);
+                word = ngx_array_push(cf->args);        //配置项槽
                 if (word == NULL) {
                     return NGX_ERROR;
                 }
 
-                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1);
+                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1);         //配置项名字
                 if (word->data == NULL) {
                     return NGX_ERROR;
                 }

@@ -8,18 +8,20 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/*
+ * 创建一个 ngx_buf_t 
+ */
 ngx_buf_t *
 ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
 {
     ngx_buf_t *b;
 
-    b = ngx_calloc_buf(pool);
+    b = ngx_calloc_buf(pool);                   //分配结构体内存
     if (b == NULL) {
         return NULL;
     }
 
-    b->start = ngx_palloc(pool, size);
+    b->start = ngx_palloc(pool, size);          //分配数据区内存
     if (b->start == NULL) {
         return NULL;
     }
@@ -43,7 +45,9 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-
+/*
+ * 从 ngx_pool_t 中获取 ngx_chain_t， 如果没有则创建一个
+ */
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {
@@ -65,6 +69,9 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
 }
 
 
+/*
+ * 创建 ngx_chain_t, 按照指定大小size和个数创建
+ */
 ngx_chain_t *
 ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
 {
@@ -73,7 +80,7 @@ ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
     ngx_buf_t    *b;
     ngx_chain_t  *chain, *cl, **ll;
 
-    p = ngx_palloc(pool, bufs->num * bufs->size);
+    p = ngx_palloc(pool, bufs->num * bufs->size);       //总内存,连续的内存区
     if (p == NULL) {
         return NULL;
     }
@@ -82,7 +89,7 @@ ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
 
     for (i = 0; i < bufs->num; i++) {
 
-        b = ngx_calloc_buf(pool);
+        b = ngx_calloc_buf(pool);                       //分配结构体内存
         if (b == NULL) {
             return NULL;
         }
@@ -122,7 +129,9 @@ ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
     return chain;
 }
 
-
+/*
+ * 添加并拷贝 ngx_chain_t 数据
+ */
 ngx_int_t
 ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 {
@@ -130,7 +139,7 @@ ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 
     ll = chain;
 
-    for (cl = *chain; cl; cl = cl->next) {
+    for (cl = *chain; cl; cl = cl->next) {              //找到尾部
         ll = &cl->next;
     }
 
@@ -151,7 +160,9 @@ ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
     return NGX_OK;
 }
 
-
+/*
+ * 获取空闲的 ngx_chain_t 
+ */
 ngx_chain_t *
 ngx_chain_get_free_buf(ngx_pool_t *p, ngx_chain_t **free)
 {
