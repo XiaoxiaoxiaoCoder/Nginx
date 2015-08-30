@@ -56,7 +56,7 @@ struct ngx_cycle_s {
 
     ngx_array_t               listening;
     ngx_array_t               paths;
-    ngx_list_t                open_files;
+    ngx_list_t                open_files;                           //已打开的文件链表
     ngx_list_t                shared_memory;
 
     ngx_uint_t                connection_n;

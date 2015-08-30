@@ -27,7 +27,9 @@ static ngx_command_t  ngx_conf_commands[] = {
       ngx_null_command
 };
 
-
+/*
+ * 配置模块
+ */
 ngx_module_t  ngx_conf_module = {
     NGX_MODULE_V1,
     NULL,                                  /* module context */
@@ -120,7 +122,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     prev = NULL;
 #endif
 
-    if (filename) {
+    if (filename) {                     //新的配置文件
 
         /* open configuration file */
 
@@ -143,7 +145,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
         cf->conf_file->buffer = &buf;
 
-        buf.start = ngx_alloc(NGX_CONF_BUFFER, cf->log);
+        buf.start = ngx_alloc(NGX_CONF_BUFFER, cf->log);                //默认4K的缓冲区
         if (buf.start == NULL) {
             goto failed;
         }
@@ -172,7 +174,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
 
     for ( ;; ) {
-        rc = ngx_conf_read_token(cf);
+        rc = ngx_conf_read_token(cf);                                   //读取配置项
 
         /*
          * ngx_conf_read_token() may return
@@ -261,6 +263,7 @@ failed:
 
 done:
 
+    /*配置文件协议完毕，释放相应数据空间*/
     if (filename) {
         if (cf->conf_file->buffer->start) {
             ngx_free(cf->conf_file->buffer->start);
@@ -380,7 +383,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             /* set up the directive's configuration context */
 
             conf = NULL;
-
+            /*提取配置项数据区指针*/
             if (cmd->type & NGX_DIRECT_CONF) {
                 conf = ((void **) cf->ctx)[ngx_modules[i]->index];
 
@@ -458,7 +461,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
     s_quoted = 0;
     d_quoted = 0;
 
-    cf->args->nelts = 0;
+    cf->args->nelts = 0;                                                        //此处相当于将配置项缓冲区给清空了
     b = cf->conf_file->buffer;
     start = b->pos;
     start_line = cf->conf_file->line;
@@ -491,7 +494,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
             len = b->pos - start;                                           //已读取的大小
 
-            if (len == NGX_CONF_BUFFER) {
+            if (len == NGX_CONF_BUFFER) {                                   //缓冲区已满
                 cf->conf_file->line = start_line;
 
                 if (d_quoted) {
@@ -519,7 +522,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
             size = (ssize_t) (file_size - cf->conf_file->file.offset);      //配置文件剩余未读取数据大小
 
-            if (size > b->end - (b->start + len)) {
+            if (size > b->end - (b->start + len)) {                         //确定缓冲区剩余空间大小
                 size = b->end - (b->start + len);
             }
 
@@ -558,7 +561,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
             continue;
         }
 
-        if (quoted) {
+        if (quoted) {                           //引号
             quoted = 0;
             continue;
         }
@@ -607,13 +610,13 @@ ngx_conf_read_token(ngx_conf_t *cf)
                     return NGX_ERROR;
                 }
 
-                if (ch == '{') {
+                if (ch == '{') {                                    //块开始
                     return NGX_CONF_BLOCK_START;
                 }
 
                 return NGX_OK;
 
-            case '}':
+            case '}':                                               //块结束
                 if (cf->args->nelts != 0) {
                     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                        "unexpected \"}\"");
@@ -744,7 +747,9 @@ ngx_conf_read_token(ngx_conf_t *cf)
     }
 }
 
-
+/*
+ * 包含一个配置文件，并读取解析配置文件
+ */
 char *
 ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -754,7 +759,7 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_glob_t   gl;
 
     value = cf->args->elts;
-    file = value[1];
+    file = value[1];                //配置文件名
 
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, cf->log, 0, "include %s", file.data);
 
@@ -762,6 +767,7 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    /*是否包含正则表达式*/
     if (strpbrk((char *) file.data, "*?[") == NULL) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, cf->log, 0, "include %s", file.data);
@@ -783,6 +789,7 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     rv = NGX_CONF_OK;
 
+    /*解析配置文件， 所有满足正则表达式的文件 */
     for ( ;; ) {
         n = ngx_read_glob(&gl, &name);
 
@@ -810,7 +817,9 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return rv;
 }
 
-
+/*
+ * 文件全名
+ */
 ngx_int_t
 ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
 {
@@ -821,7 +830,9 @@ ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
     return ngx_get_full_name(cycle->pool, prefix, name);
 }
 
-
+/*
+ * 打开文件
+ */
 ngx_open_file_t *
 ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
 {
@@ -841,20 +852,21 @@ ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
             return NULL;
         }
 
-        part = &cycle->open_files.part;
-        file = part->elts;
+        part = &cycle->open_files.part;             //文件链表
+        file = part->elts;                          //文件
 
         for (i = 0; /* void */ ; i++) {
 
-            if (i >= part->nelts) {
+            if (i >= part->nelts) {                 //单个part数据完了，下一个part
                 if (part->next == NULL) {
                     break;
                 }
                 part = part->next;
                 file = part->elts;
-                i = 0;
+                i = 0;                              //重置为0,很重要
             }
 
+            /*检查是否已经有相同文件*/
             if (full.len != file[i].name.len) {
                 continue;
             }
@@ -865,7 +877,7 @@ ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
         }
     }
 
-    file = ngx_list_push(&cycle->open_files);
+    file = ngx_list_push(&cycle->open_files);       //文件压入链表,实际上只是返回了一个槽位
     if (file == NULL) {
         return NULL;
     }
@@ -885,7 +897,9 @@ ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
     return file;
 }
 
-
+/*
+ * 刷新文件缓冲区
+ */
 static void
 ngx_conf_flush_files(ngx_cycle_t *cycle)
 {
@@ -915,7 +929,9 @@ ngx_conf_flush_files(ngx_cycle_t *cycle)
     }
 }
 
-
+/*
+ * 记录配置信息错误日志
+ */
 void ngx_cdecl
 ngx_conf_log_error(ngx_uint_t level, ngx_conf_t *cf, ngx_err_t err,
     const char *fmt, ...)
@@ -949,7 +965,9 @@ ngx_conf_log_error(ngx_uint_t level, ngx_conf_t *cf, ngx_err_t err,
                   cf->conf_file->file.name.data, cf->conf_file->line);
 }
 
-
+/*
+ * 设置配置中的 flag slot
+ */
 char *
 ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -990,6 +1008,9 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * 设置配置中的 str slot
+ */
 char *
 ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1016,7 +1037,9 @@ ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 array slot
+ */
 char *
 ngx_conf_set_str_array_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1035,7 +1058,7 @@ ngx_conf_set_str_array_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    s = ngx_array_push(*a);
+    s = ngx_array_push(*a);                 //压入配置
     if (s == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1052,7 +1075,9 @@ ngx_conf_set_str_array_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 keyval slot
+ */
 char *
 ngx_conf_set_keyval_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1090,7 +1115,9 @@ ngx_conf_set_keyval_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 num slot
+ */
 char *
 ngx_conf_set_num_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1121,7 +1148,9 @@ ngx_conf_set_num_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 size slot
+ */
 char *
 ngx_conf_set_size_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1152,7 +1181,9 @@ ngx_conf_set_size_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 off slot
+ */
 char *
 ngx_conf_set_off_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1183,7 +1214,9 @@ ngx_conf_set_off_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 msec slot
+ */
 char *
 ngx_conf_set_msec_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1214,7 +1247,9 @@ ngx_conf_set_msec_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 sec slot
+ */
 char *
 ngx_conf_set_sec_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1245,7 +1280,9 @@ ngx_conf_set_sec_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 buf slot
+ */
 char *
 ngx_conf_set_bufs_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1275,7 +1312,9 @@ ngx_conf_set_bufs_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置中的 enum slot
+ */
 char *
 ngx_conf_set_enum_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1312,7 +1351,9 @@ ngx_conf_set_enum_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_ERROR;
 }
 
-
+/*
+ * 设置配置中的 bitmast slot
+ */
 char *
 ngx_conf_set_bitmask_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1369,7 +1410,9 @@ ngx_conf_unsupported(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #endif
 
-
+/*
+ * 弃用的配置项
+ */
 char *
 ngx_conf_deprecated(ngx_conf_t *cf, void *post, void *data)
 {
@@ -1383,7 +1426,9 @@ ngx_conf_deprecated(ngx_conf_t *cf, void *post, void *data)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 检查配置中的 num bounds
+ */
 char *
 ngx_conf_check_num_bounds(ngx_conf_t *cf, void *post, void *data)
 {

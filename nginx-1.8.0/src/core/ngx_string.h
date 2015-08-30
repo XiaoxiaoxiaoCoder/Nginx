@@ -24,8 +24,8 @@ typedef struct {
  * ngx_keyval 结构体定义
  */
 typedef struct {
-    ngx_str_t   key;
-    ngx_str_t   value;
+    ngx_str_t   key;        //key   字符串
+    ngx_str_t   value;      //value 字符串
 } ngx_keyval_t;
 
 /*

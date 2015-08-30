@@ -83,7 +83,7 @@ struct ngx_command_s {
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);     //从配置文件中把该指令的参数转换为合适的数据类型,并保存
                                                                                     //到模块的配置结构体中
     ngx_uint_t            conf;                                                     //
-    ngx_uint_t            offset;                                                   //转换的值在配置结构体中的偏移
+    ngx_uint_t            offset;                                                   //该指令配置项在配置数据集中的偏移量
     void                 *post;                                                     //
 };
 
@@ -180,7 +180,7 @@ struct ngx_conf_s {
     ngx_log_t            *log;                  //日志
 
     void                 *ctx;
-    ngx_uint_t            module_type;
+    ngx_uint_t            module_type;          //当前配置的模块类型
     ngx_uint_t            cmd_type;
 
     ngx_conf_handler_pt   handler;

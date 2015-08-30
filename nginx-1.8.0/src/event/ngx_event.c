@@ -188,7 +188,7 @@ ngx_event_module_t  ngx_event_core_module_ctx = {
 };
 
 /*
- * 核心模块，决定使用哪种事件驱动机制，以及如何管理事件
+ * 事件模块，决定使用哪种事件驱动机制，以及如何管理事件
  */
 ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1,
@@ -913,7 +913,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    *(void **) conf = ctx;
+    *(void **) conf = ctx;                                  //事件核心模块的配置项数组
 
     /*调用所有事件模块解析的 create_conf 方法*/
     for (i = 0; ngx_modules[i]; i++) {
