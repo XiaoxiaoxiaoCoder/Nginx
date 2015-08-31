@@ -179,9 +179,9 @@ struct ngx_conf_s {
     ngx_conf_file_t      *conf_file;            //配置文件信息
     ngx_log_t            *log;                  //日志
 
-    void                 *ctx;
+    void                 *ctx;                  //配置所属上下文
     ngx_uint_t            module_type;          //当前配置的模块类型
-    ngx_uint_t            cmd_type;
+    ngx_uint_t            cmd_type;             //配置项指令类型
 
     ngx_conf_handler_pt   handler;
     char                 *handler_conf;

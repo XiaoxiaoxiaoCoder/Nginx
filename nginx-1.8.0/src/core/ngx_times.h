@@ -12,7 +12,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/*
+ * ngx_time_t 结构的定义
+ */
 typedef struct {
     time_t      sec;
     ngx_uint_t  msec;

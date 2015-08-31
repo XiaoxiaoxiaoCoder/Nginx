@@ -28,8 +28,8 @@ static void ngx_cache_manager_process_handler(ngx_event_t *ev);
 static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
-ngx_uint_t    ngx_process;
-ngx_pid_t     ngx_pid;
+ngx_uint_t    ngx_process;              //进程执行方式
+ngx_pid_t     ngx_pid;                  //进程Id
 
 sig_atomic_t  ngx_reap;
 sig_atomic_t  ngx_sigio;
@@ -282,7 +282,9 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     }
 }
 
-
+/*
+ * 进行事件循环了
+ */
 void
 ngx_single_process_cycle(ngx_cycle_t *cycle)
 {

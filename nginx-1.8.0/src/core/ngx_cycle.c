@@ -17,13 +17,13 @@ static ngx_int_t ngx_test_lockfile(u_char *file, ngx_log_t *log);
 static void ngx_clean_old_cycles(ngx_event_t *ev);
 
 
-volatile ngx_cycle_t  *ngx_cycle;
+volatile ngx_cycle_t  *ngx_cycle;                   //ngx_cycle 指针，全局
 ngx_array_t            ngx_old_cycles;
 
 static ngx_pool_t     *ngx_temp_pool;
 static ngx_event_t     ngx_cleaner_event;
 
-ngx_uint_t             ngx_test_config;
+ngx_uint_t             ngx_test_config;             //测试配置而已
 ngx_uint_t             ngx_quiet_mode;
 
 #if (NGX_OLD_THREADS)
@@ -55,14 +55,14 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_core_module_t   *module;
     char                 hostname[NGX_MAXHOSTNAMELEN];
 
-    ngx_timezone_update();
+    ngx_timezone_update();                                          //初始化时区
 
     /* force localtime update with a new timezone */
 
     tp = ngx_timeofday();
     tp->sec = 0;
 
-    ngx_time_update();
+    ngx_time_update();                                              //更新时间
 
 
     log = old_cycle->log;
@@ -79,10 +79,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
+    /*初始化cycle部分数据*/
     cycle->pool = pool;
     cycle->log = log;
     cycle->old_cycle = old_cycle;
 
+    /*拷贝配置文件前缀*/
     cycle->conf_prefix.len = old_cycle->conf_prefix.len;
     cycle->conf_prefix.data = ngx_pstrdup(pool, &old_cycle->conf_prefix);
     if (cycle->conf_prefix.data == NULL) {
@@ -90,13 +92,14 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
+    /*拷贝前缀*/
     cycle->prefix.len = old_cycle->prefix.len;
     cycle->prefix.data = ngx_pstrdup(pool, &old_cycle->prefix);
     if (cycle->prefix.data == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
-
+    /*拷贝配置文件*/
     cycle->conf_file.len = old_cycle->conf_file.len;
     cycle->conf_file.data = ngx_pnalloc(pool, old_cycle->conf_file.len + 1);
     if (cycle->conf_file.data == NULL) {
@@ -105,7 +108,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
     ngx_cpystrn(cycle->conf_file.data, old_cycle->conf_file.data,
                 old_cycle->conf_file.len + 1);
-
+    /*拷贝配置参数*/
     cycle->conf_param.len = old_cycle->conf_param.len;
     cycle->conf_param.data = ngx_pstrdup(pool, &old_cycle->conf_param);
     if (cycle->conf_param.data == NULL) {
@@ -180,14 +183,14 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_queue_init(&cycle->reusable_connections_queue);
 
-
+    /*各个模块配置项数组*/
     cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));
     if (cycle->conf_ctx == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
-
+    /*获取主机名*/
     if (gethostname(hostname, NGX_MAXHOSTNAMELEN) == -1) {
         ngx_log_error(NGX_LOG_EMERG, log, ngx_errno, "gethostname() failed");
         ngx_destroy_pool(pool);
@@ -217,7 +220,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         module = ngx_modules[i]->ctx;
 
         if (module->create_conf) {
-            rv = module->create_conf(cycle);                        //创建配置
+            rv = module->create_conf(cycle);                        //创建各个核心模块的配置项
             if (rv == NULL) {
                 ngx_destroy_pool(pool);
                 return NULL;
@@ -232,37 +235,37 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_memzero(&conf, sizeof(ngx_conf_t));
     /* STUB: init array ? */
-    conf.args = ngx_array_create(pool, 10, sizeof(ngx_str_t));
+    conf.args = ngx_array_create(pool, 10, sizeof(ngx_str_t));      //初始化配置项参数链表
     if (conf.args == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
-    conf.temp_pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
+    conf.temp_pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);     //配置项内存池
     if (conf.temp_pool == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
-
+    /*配置项相关数据赋值*/
     conf.ctx = cycle->conf_ctx;
     conf.cycle = cycle;
     conf.pool = pool;
     conf.log = log;
-    conf.module_type = NGX_CORE_MODULE;
-    conf.cmd_type = NGX_MAIN_CONF;
+    conf.module_type = NGX_CORE_MODULE;                             //核心模块
+    conf.cmd_type = NGX_MAIN_CONF;                                  //main 配置项
 
 #if 0
     log->log_level = NGX_LOG_DEBUG_ALL;
 #endif
 
-    if (ngx_conf_param(&conf) != NGX_CONF_OK) {
+    if (ngx_conf_param(&conf) != NGX_CONF_OK) {                     //解析启动参数带入的配置项
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
     }
 
-    if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
+    if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {  //解析配置文件, 会初始化相关的非核心模块
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
@@ -281,7 +284,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
         module = ngx_modules[i]->ctx;
 
-        if (module->init_conf) {
+        if (module->init_conf) {                                    //初始化各个核心模块的配置项,如果未配置，则按默认配置初始化
             if (module->init_conf(cycle, cycle->conf_ctx[ngx_modules[i]->index])
                 == NGX_CONF_ERROR)
             {
@@ -292,10 +295,11 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
     }
 
-    if (ngx_process == NGX_PROCESS_SIGNALLER) {
+    if (ngx_process == NGX_PROCESS_SIGNALLER) {                     //信号模式，拜拜
         return cycle;
     }
 
+    /*获取核心配置项*/
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
     if (ngx_test_config) {
@@ -595,7 +599,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     pool->log = cycle->log;
 
-    /*初始化所有模块*/
+    /*初始化所有模块,不是配置*/
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_module) {
             if (ngx_modules[i]->init_module(cycle) != NGX_OK) {
@@ -900,7 +904,9 @@ ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
     return NGX_OK;
 }
 
-
+/*
+ * 创建进程id文件,存储进程Id
+ */
 ngx_int_t
 ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
 {

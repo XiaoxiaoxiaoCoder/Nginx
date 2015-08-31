@@ -191,15 +191,15 @@ ngx_module_t  ngx_core_module = {
 };
 
 
-ngx_uint_t          ngx_max_module;
+ngx_uint_t          ngx_max_module;         //模块数
 
-static ngx_uint_t   ngx_show_help;
-static ngx_uint_t   ngx_show_version;
-static ngx_uint_t   ngx_show_configure;
-static u_char      *ngx_prefix;
-static u_char      *ngx_conf_file;
-static u_char      *ngx_conf_params;
-static char        *ngx_signal;
+static ngx_uint_t   ngx_show_help;          //命令行参数
+static ngx_uint_t   ngx_show_version;       //展示版本号
+static ngx_uint_t   ngx_show_configure;     //配置
+static u_char      *ngx_prefix;             //配置路径前缀
+static u_char      *ngx_conf_file;          //配置文件名
+static u_char      *ngx_conf_params;        //配置参数
+static char        *ngx_signal;             //信号
 
 
 static char **ngx_os_environ;
@@ -223,6 +223,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+    /*展示版本信息*/
     if (ngx_show_version) {
         ngx_write_stderr("nginx version: " NGINX_VER_BUILD NGX_LINEFEED);
 
@@ -294,9 +295,9 @@ main(int argc, char *const *argv)
     ngx_regex_init();
 #endif
 
-    ngx_pid = ngx_getpid();
+    ngx_pid = ngx_getpid();                 //进程Id
 
-    log = ngx_log_init(ngx_prefix);
+    log = ngx_log_init(ngx_prefix);         //初始日志
     if (log == NULL) {
         return 1;
     }
@@ -311,24 +312,24 @@ main(int argc, char *const *argv)
      * ngx_process_options()
      */
 
-    ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
+    ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));              //初始化cycle
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
 
-    init_cycle.pool = ngx_create_pool(1024, log);
+    init_cycle.pool = ngx_create_pool(1024, log);               //初始化内存池
     if (init_cycle.pool == NULL) {
         return 1;
     }
 
-    if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
+    if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {     //保存启动参数
         return 1;
     }
 
-    if (ngx_process_options(&init_cycle) != NGX_OK) {
+    if (ngx_process_options(&init_cycle) != NGX_OK) {           //处理启动参数
         return 1;
     }
 
-    if (ngx_os_init(log) != NGX_OK) {
+    if (ngx_os_init(log) != NGX_OK) {                           //初始化系统相关
         return 1;
     }
 
@@ -359,7 +360,7 @@ main(int argc, char *const *argv)
 
         return 1;
     }
-
+    /*测试配置，到此为止*/
     if (ngx_test_config) {
         if (!ngx_quiet_mode) {
             ngx_log_stderr(0, "configuration file %s test is successful",
@@ -420,6 +421,7 @@ main(int argc, char *const *argv)
 
     ngx_use_stderr = 0;
 
+    /*master模式或单进程模式*/
     if (ngx_process == NGX_PROCESS_SINGLE) {
         ngx_single_process_cycle(cycle);
 
@@ -683,7 +685,9 @@ ngx_exec_new_binary(ngx_cycle_t *cycle, char *const *argv)
     return pid;
 }
 
-
+/*
+ * 读取启动参数
+ */
 static ngx_int_t
 ngx_get_options(int argc, char *const *argv)
 {
@@ -704,21 +708,21 @@ ngx_get_options(int argc, char *const *argv)
             switch (*p++) {
 
             case '?':
-            case 'h':
+            case 'h':                           //帮助
                 ngx_show_version = 1;
                 ngx_show_help = 1;
                 break;
 
-            case 'v':
+            case 'v':                           //版本号
                 ngx_show_version = 1;
                 break;
 
-            case 'V':
+            case 'V':                           //版本加配置
                 ngx_show_version = 1;
                 ngx_show_configure = 1;
                 break;
 
-            case 't':
+            case 't':                           //测试
                 ngx_test_config = 1;
                 break;
 
@@ -727,12 +731,12 @@ ngx_get_options(int argc, char *const *argv)
                 break;
 
             case 'p':
-                if (*p) {
+                if (*p) {                       //如果没有空格，则紧跟-p后面的数据为路径前缀
                     ngx_prefix = p;
                     goto next;
                 }
 
-                if (argv[++i]) {
+                if (argv[++i]) {                //有空格，则洗啊一参数为配置前缀路径名
                     ngx_prefix = (u_char *) argv[i];
                     goto next;
                 }
@@ -741,12 +745,12 @@ ngx_get_options(int argc, char *const *argv)
                 return NGX_ERROR;
 
             case 'c':
-                if (*p) {
+                if (*p) {                       //如果没有空格，则紧跟-c后面的数据为配置文件名
                     ngx_conf_file = p;
                     goto next;
                 }
 
-                if (argv[++i]) {
+                if (argv[++i]) {                //有空格，则下一参数为配置文件名
                     ngx_conf_file = (u_char *) argv[i];
                     goto next;
                 }
@@ -754,8 +758,8 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_log_stderr(0, "option \"-c\" requires file name");
                 return NGX_ERROR;
 
-            case 'g':
-                if (*p) {
+            case 'g':                           //配置参数
+                if (*p) {                       
                     ngx_conf_params = p;
                     goto next;
                 }
@@ -806,7 +810,9 @@ ngx_get_options(int argc, char *const *argv)
     return NGX_OK;
 }
 
-
+/*
+ * 保存启动参数
+ */
 static ngx_int_t
 ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
 {
@@ -823,12 +829,12 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
     ngx_os_argv = (char **) argv;
     ngx_argc = argc;
 
-    ngx_argv = ngx_alloc((argc + 1) * sizeof(char *), cycle->log);
+    ngx_argv = ngx_alloc((argc + 1) * sizeof(char *), cycle->log);          //分配参数空间
     if (ngx_argv == NULL) {
         return NGX_ERROR;
     }
 
-    for (i = 0; i < argc; i++) {
+    for (i = 0; i < argc; i++) {                                            //拷贝参数内容
         len = ngx_strlen(argv[i]) + 1;
 
         ngx_argv[i] = ngx_alloc(len, cycle->log);
@@ -848,7 +854,9 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
     return NGX_OK;
 }
 
-
+/*
+ * 处理参数选项内容
+ */
 static ngx_int_t
 ngx_process_options(ngx_cycle_t *cycle)
 {
@@ -859,7 +867,7 @@ ngx_process_options(ngx_cycle_t *cycle)
         len = ngx_strlen(ngx_prefix);
         p = ngx_prefix;
 
-        if (len && !ngx_path_separator(p[len - 1])) {
+        if (len && !ngx_path_separator(p[len - 1])) {           //如果前缀路径最后不是 '/',则补一个 '/'
             p = ngx_pnalloc(cycle->pool, len + 1);
             if (p == NULL) {
                 return NGX_ERROR;
@@ -868,7 +876,7 @@ ngx_process_options(ngx_cycle_t *cycle)
             ngx_memcpy(p, ngx_prefix, len);
             p[len++] = '/';
         }
-
+        /*配置前缀赋值*/
         cycle->conf_prefix.len = len;
         cycle->conf_prefix.data = p;
         cycle->prefix.len = len;
@@ -883,7 +891,8 @@ ngx_process_options(ngx_cycle_t *cycle)
             return NGX_ERROR;
         }
 
-        if (ngx_getcwd(p, NGX_MAX_PATH) == 0) {
+        /*当前路径*/
+        if (ngx_getcwd(p, NGX_MAX_PATH) == 0) {     
             ngx_log_stderr(ngx_errno, "[emerg]: " ngx_getcwd_n " failed");
             return NGX_ERROR;
         }
@@ -899,7 +908,7 @@ ngx_process_options(ngx_cycle_t *cycle)
 
 #else
 
-#ifdef NGX_CONF_PREFIX
+#ifdef NGX_CONF_PREFIX                                              //按默认值初始化前缀路径配置
         ngx_str_set(&cycle->conf_prefix, NGX_CONF_PREFIX);
 #else
         ngx_str_set(&cycle->conf_prefix, NGX_PREFIX);
@@ -909,7 +918,7 @@ ngx_process_options(ngx_cycle_t *cycle)
 #endif
     }
 
-    if (ngx_conf_file) {
+    if (ngx_conf_file) {                                            //配置文件名
         cycle->conf_file.len = ngx_strlen(ngx_conf_file);
         cycle->conf_file.data = ngx_conf_file;
 
@@ -917,7 +926,7 @@ ngx_process_options(ngx_cycle_t *cycle)
         ngx_str_set(&cycle->conf_file, NGX_CONF_PATH);
     }
 
-    if (ngx_conf_full_name(cycle, &cycle->conf_file, 0) != NGX_OK) {
+    if (ngx_conf_full_name(cycle, &cycle->conf_file, 0) != NGX_OK) {    //配置文件全路径
         return NGX_ERROR;
     }
 
@@ -925,19 +934,19 @@ ngx_process_options(ngx_cycle_t *cycle)
          p > cycle->conf_file.data;
          p--)
     {
-        if (ngx_path_separator(*p)) {
+        if (ngx_path_separator(*p)) {                                   //重新赋值配置文件前缀
             cycle->conf_prefix.len = p - ngx_cycle->conf_file.data + 1;
             cycle->conf_prefix.data = ngx_cycle->conf_file.data;
             break;
         }
     }
 
-    if (ngx_conf_params) {
+    if (ngx_conf_params) {                                              //配置参数
         cycle->conf_param.len = ngx_strlen(ngx_conf_params);
         cycle->conf_param.data = ngx_conf_params;
     }
 
-    if (ngx_test_config) {
+    if (ngx_test_config) {                                              //测试配置
         cycle->log->log_level = NGX_LOG_INFO;
     }
 

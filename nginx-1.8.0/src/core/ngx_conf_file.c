@@ -60,7 +60,7 @@ static ngx_uint_t argument_number[] = {
 };
 
 /*
- * 初始化 ngx_conf_t 结构体
+ * 初始化 ngx_conf_t 结构体,主要解析启动参数带入的配置项参数
  */
 char *
 ngx_conf_param(ngx_conf_t *cf)
@@ -72,7 +72,7 @@ ngx_conf_param(ngx_conf_t *cf)
 
     param = &cf->cycle->conf_param;
 
-    if (param->len == 0) {
+    if (param->len == 0) {                      //参数为空，拜拜
         return NGX_CONF_OK;
     }
 
@@ -93,7 +93,7 @@ ngx_conf_param(ngx_conf_t *cf)
     cf->conf_file = &conf_file;
     cf->conf_file->buffer = &b;
 
-    rv = ngx_conf_parse(cf, NULL);
+    rv = ngx_conf_parse(cf, NULL);          //解析配置项项
 
     cf->conf_file = NULL;
 

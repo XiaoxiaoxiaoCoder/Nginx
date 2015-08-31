@@ -313,7 +313,9 @@ failed:
 
 #endif
 
-
+/*
+ * 初始化epoll
+ */
 static ngx_int_t
 ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 {
@@ -942,7 +944,9 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev)
 
 #endif
 
-
+/*
+ * 创建 ngx_epoll 模块配置文件
+ */
 static void *
 ngx_epoll_create_conf(ngx_cycle_t *cycle)
 {
@@ -959,7 +963,9 @@ ngx_epoll_create_conf(ngx_cycle_t *cycle)
     return epcf;
 }
 
-
+/*
+ * 初始化 ngx_epoll 模块配置文件
+ */
 static char *
 ngx_epoll_init_conf(ngx_cycle_t *cycle, void *conf)
 {

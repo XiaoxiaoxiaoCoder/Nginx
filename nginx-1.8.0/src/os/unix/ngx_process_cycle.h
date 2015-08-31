@@ -20,9 +20,9 @@
 #define NGX_CMD_REOPEN         5
 
 
-#define NGX_PROCESS_SINGLE     0
-#define NGX_PROCESS_MASTER     1
-#define NGX_PROCESS_SIGNALLER  2
+#define NGX_PROCESS_SINGLE     0            //单进程模式
+#define NGX_PROCESS_MASTER     1            //master模式
+#define NGX_PROCESS_SIGNALLER  2            //信号模式
 #define NGX_PROCESS_WORKER     3
 #define NGX_PROCESS_HELPER     4
 

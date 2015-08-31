@@ -55,7 +55,7 @@ struct ngx_cycle_s {
     ngx_queue_t               reusable_connections_queue;
 
     ngx_array_t               listening;
-    ngx_array_t               paths;
+    ngx_array_t               paths;                                //路径
     ngx_list_t                open_files;                           //已打开的文件链表
     ngx_list_t                shared_memory;
 
@@ -68,12 +68,12 @@ struct ngx_cycle_s {
 
     ngx_cycle_t              *old_cycle;
 
-    ngx_str_t                 conf_file;
-    ngx_str_t                 conf_param;
-    ngx_str_t                 conf_prefix;                              //
-    ngx_str_t                 prefix;                                   //
+    ngx_str_t                 conf_file;                            //配置文件名
+    ngx_str_t                 conf_param;                           //启动参数带入的配置项
+    ngx_str_t                 conf_prefix;                          //配置前缀路径
+    ngx_str_t                 prefix;                               //前缀路径
     ngx_str_t                 lock_file;
-    ngx_str_t                 hostname;                                 //host name 名称
+    ngx_str_t                 hostname;                             //host name 名称
 };
 
 /*
@@ -104,8 +104,8 @@ typedef struct {
      ngx_str_t                working_directory;
      ngx_str_t                lock_file;
 
-     ngx_str_t                pid;
-     ngx_str_t                oldpid;
+     ngx_str_t                pid;                          //存储pid的文件的路径
+     ngx_str_t                oldpid;                       //旧的存储文件路径
 
      ngx_array_t              env;
      char                   **environment;

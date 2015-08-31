@@ -41,8 +41,8 @@ sig_atomic_t          ngx_event_timer_alarm;
 
 static ngx_uint_t     ngx_event_max_module;
 
-ngx_uint_t            ngx_event_flags;
-ngx_event_actions_t   ngx_event_actions;
+ngx_uint_t            ngx_event_flags;              //全局变量，真正的事件处理模块的标志
+ngx_event_actions_t   ngx_event_actions;            //全局变量，表示真正的事件处理模块的处理方式
 
 
 static ngx_atomic_t   connection_counter = 1;
@@ -420,7 +420,9 @@ ngx_handle_write_event(ngx_event_t *wev, size_t lowat)
     return NGX_OK;
 }
 
-
+/*
+ * 初始化event模块配置
+ */
 static char *
 ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 {
@@ -433,7 +435,9 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 初始化事件模块
+ */
 static ngx_int_t
 ngx_event_module_init(ngx_cycle_t *cycle)
 {
@@ -445,8 +449,8 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_core_conf_t     *ccf;
     ngx_event_conf_t    *ecf;
 
-    cf = ngx_get_conf(cycle->conf_ctx, ngx_events_module);
-    ecf = (*cf)[ngx_event_core_module.ctx_index];
+    cf = ngx_get_conf(cycle->conf_ctx, ngx_events_module);          //获取整个event模块的配置信息
+    ecf = (*cf)[ngx_event_core_module.ctx_index];                   //event核心配置模块的数据
 
     if (!ngx_test_config && ngx_process <= NGX_PROCESS_MASTER) {
         ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0,
@@ -578,7 +582,9 @@ ngx_timer_signal_handler(int signo)
 
 #endif
 
-
+/*
+ * 事件模块 process 初始化
+ */
 static ngx_int_t
 ngx_event_process_init(ngx_cycle_t *cycle)
 {
@@ -590,7 +596,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ngx_event_conf_t    *ecf;
     ngx_event_module_t  *module;
 
-    ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
+    ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);       //相应配置数据
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
@@ -620,6 +626,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
+    /*初始化选定的事件分发模块*/
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -876,7 +883,9 @@ ngx_send_lowat(ngx_connection_t *c, size_t lowat)
     return NGX_OK;
 }
 
-
+/*
+ * 初始化事件模块
+ */
 static char *
 ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -944,7 +953,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (rv != NGX_CONF_OK)
         return rv;
 
-    /*调用所有事件模块的 init_conf 方法*/
+    /*调用所有事件模块的 init_conf 方法, 初始化配置项 */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
             continue;
@@ -1162,7 +1171,9 @@ ngx_event_debug_connection(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 创建 event 核心模块配置文件
+ */
 static void *
 ngx_event_core_create_conf(ngx_cycle_t *cycle)
 {
@@ -1193,7 +1204,9 @@ ngx_event_core_create_conf(ngx_cycle_t *cycle)
     return ecf;
 }
 
-
+/*
+ * 初始化 event 核心配置文件
+ */
 static char *
 ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 {
@@ -1267,7 +1280,7 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
             event_module = ngx_modules[i]->ctx;
 
-            if (ngx_strcmp(event_module->name->data, event_core_name.data) == 0)
+            if (ngx_strcmp(event_module->name->data, event_core_name.data) == 0)        //event核心模块,不是事件分发，不参与其中
             {
                 continue;
             }
