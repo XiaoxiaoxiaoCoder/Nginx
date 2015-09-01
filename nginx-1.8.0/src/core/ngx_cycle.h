@@ -102,7 +102,7 @@ typedef struct {
      ngx_gid_t                group;
 
      ngx_str_t                working_directory;
-     ngx_str_t                lock_file;
+     ngx_str_t                lock_file;                    //文件锁
 
      ngx_str_t                pid;                          //存储pid的文件的路径
      ngx_str_t                oldpid;                       //旧的存储文件路径

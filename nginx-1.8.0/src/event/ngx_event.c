@@ -205,7 +205,9 @@ ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+/*
+ * 处理IO事件和定时事件
+ */
 void
 ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {
@@ -229,6 +231,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 #endif
     }
 
+    /*检查锁*/
     if (ngx_use_accept_mutex) {
         if (ngx_accept_disabled > 0) {
             ngx_accept_disabled--;
@@ -421,7 +424,7 @@ ngx_handle_write_event(ngx_event_t *wev, size_t lowat)
 }
 
 /*
- * 初始化event模块配置
+ * 初始化event模块配置, 配置信息会在 ngx_events_block 中生成
  */
 static char *
 ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
@@ -466,6 +469,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_int_t      limit;
     struct rlimit  rlmt;
 
+    /*获取文件句柄限制*/
     if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "getrlimit(RLIMIT_NOFILE) failed, ignored");
@@ -488,7 +492,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 #endif /* !(NGX_WIN32) */
 
 
-    if (ccf->master == 0) {
+    if (ccf->master == 0) {                 //单进程模式
         return NGX_OK;
     }
 
@@ -599,7 +603,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);       //相应配置数据
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
-    if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
+    if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {            //多进程模式？
         ngx_use_accept_mutex = 1;
         ngx_accept_mutex_held = 0;
         ngx_accept_mutex_delay = ecf->accept_mutex_delay;
@@ -619,14 +623,14 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
-    ngx_queue_init(&ngx_posted_accept_events);
+    ngx_queue_init(&ngx_posted_accept_events);                      //初始化队列
     ngx_queue_init(&ngx_posted_events);
 
-    if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
+    if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {            //初始化超时时间定时器
         return NGX_ERROR;
     }
 
-    /*初始化选定的事件分发模块*/
+    /*初始化选定的事件分发模块, 并不是所有事件模块都会初始化，只有选定的事件模块才能初始化*/
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -638,7 +642,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
         module = ngx_modules[m]->ctx;
 
-        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {
+        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {      //初始化事件分发
             /* fatal */
             exit(2);
         }
@@ -826,6 +830,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
         rev->handler = ngx_event_accept;
 
+        /*使用accept锁，等worker进程抢到 accpet 锁，再加入 epoll 事件循环*/
         if (ngx_use_accept_mutex) {
             continue;
         }
@@ -1271,6 +1276,7 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
 #endif
 
+    /*如果优先选择模块都失败，则从所有事件模块中选择一个*/
     if (module == NULL) {
         for (i = 0; ngx_modules[i]; i++) {
 

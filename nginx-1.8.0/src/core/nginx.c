@@ -1141,7 +1141,9 @@ ngx_core_module_init_conf(ngx_cycle_t *cycle, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置用户
+ */
 static char *
 ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1204,7 +1206,9 @@ ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 #endif
 }
 
-
+/*
+ * 设置环境变量
+ */
 static char *
 ngx_set_env(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1234,7 +1238,9 @@ ngx_set_env(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置优先级
+ */
 static char *
 ngx_set_priority(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1274,7 +1280,9 @@ ngx_set_priority(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置 cpu 亲和性
+ */
 static char *
 ngx_set_cpu_affinity(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1346,7 +1354,9 @@ ngx_set_cpu_affinity(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 获取 cpu 亲和性
+ */
 uint64_t
 ngx_get_cpu_affinity(ngx_uint_t n)
 {

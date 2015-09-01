@@ -75,7 +75,7 @@ typedef struct {
  */
 typedef struct {
     ngx_file_t                 file;                    //文件相关信息
-    off_t                      offset;
+    off_t                      offset;                  //偏移量
     ngx_path_t                *path;                    //文件路径
     ngx_pool_t                *pool;
     char                      *warn;

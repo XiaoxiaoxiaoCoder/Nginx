@@ -82,9 +82,10 @@ struct ngx_command_s {
     ngx_uint_t            type;                                                     //设置 command 在配置文件位置的哪一部分使用是合法的可选值
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);     //从配置文件中把该指令的参数转换为合适的数据类型,并保存
                                                                                     //到模块的配置结构体中
-    ngx_uint_t            conf;                                                     //
+    ngx_uint_t            conf;                                                     //对http模块有效，http module的配置结构信息(main、srv、loc)都存放在ngx_http_conf_ctx_t 中对应的数组
+                                                                                    //conf属性指示这个指令配置结构是 main、src还是loc
     ngx_uint_t            offset;                                                   //该指令配置项在配置数据集中的偏移量
-    void                 *post;                                                     //
+    void                 *post;                                                     //一般是函数指针，在set回调函数中调用
 };
 
 #define ngx_null_command  { ngx_null_string, 0, NULL, 0, 0, NULL }

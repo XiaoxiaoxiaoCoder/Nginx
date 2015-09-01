@@ -59,7 +59,9 @@ ngx_get_full_name(ngx_pool_t *pool, ngx_str_t *prefix, ngx_str_t *name)
     return NGX_OK;
 }
 
-
+/*
+ * 检查路径是否为全路径
+ */
 static ngx_int_t
 ngx_test_full_name(ngx_str_t *name)
 {
@@ -109,7 +111,9 @@ ngx_test_full_name(ngx_str_t *name)
 #endif
 }
 
-
+/*
+ * 将 chain 的内容写入临时文件中
+ */
 ssize_t
 ngx_write_chain_to_temp_file(ngx_temp_file_t *tf, ngx_chain_t *chain)
 {
@@ -212,7 +216,9 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
     }
 }
 
-
+/*
+ * 创建一个 hash 文件名
+ */
 void
 ngx_create_hashed_filename(ngx_path_t *path, u_char *file, size_t len)
 {
@@ -237,7 +243,9 @@ ngx_create_hashed_filename(ngx_path_t *path, u_char *file, size_t len)
     }
 }
 
-
+/*
+ * 创建一个路径
+ */
 ngx_int_t
 ngx_create_path(ngx_file_t *file, ngx_path_t *path)
 {
@@ -275,7 +283,9 @@ ngx_create_path(ngx_file_t *file, ngx_path_t *path)
     return NGX_OK;
 }
 
-
+/*
+ * 创建全路径
+ */
 ngx_err_t
 ngx_create_full_path(u_char *dir, ngx_uint_t access)
 {
@@ -319,7 +329,9 @@ ngx_create_full_path(u_char *dir, ngx_uint_t access)
     return err;
 }
 
-
+/*
+ * 获取一个临时数
+ */
 ngx_atomic_uint_t
 ngx_next_temp_number(ngx_uint_t collision)
 {
@@ -332,7 +344,9 @@ ngx_next_temp_number(ngx_uint_t collision)
     return n + add;
 }
 
-
+/*
+ * 设置 path slot
+ */
 char *
 ngx_conf_set_path_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

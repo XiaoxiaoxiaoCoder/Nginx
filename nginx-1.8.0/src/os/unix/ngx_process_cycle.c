@@ -83,6 +83,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_listening_t   *ls;
     ngx_core_conf_t   *ccf;
 
+    /*相关的信号处理*/
     sigemptyset(&set);
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGALRM);
@@ -121,9 +122,10 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         p = ngx_cpystrn(p, (u_char *) ngx_argv[i], size);
     }
 
-    ngx_setproctitle(title);
+    ngx_setproctitle(title);                //设置进程显示名称，包括命令行参数
 
 
+    /*初始化并启动worker进程*/
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
     ngx_start_worker_processes(cycle, ccf->worker_processes,
@@ -135,6 +137,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigio = 0;
     live = 1;
 
+    /*master 进程的主循环*/
     for ( ;; ) {
         if (delay) {
             if (ngx_sigalrm) {
@@ -283,7 +286,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 }
 
 /*
- * 进行事件循环了
+ * 单进程 master 模式进行事件循环了
  */
 void
 ngx_single_process_cycle(ngx_cycle_t *cycle)
@@ -294,7 +297,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
         /* fatal */
         exit(2);
     }
-
+    /*初始化进程*/
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_process) {
             if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) {
@@ -309,18 +312,18 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
 
         ngx_process_events_and_timers(cycle);
 
-        if (ngx_terminate || ngx_quit) {
+        if (ngx_terminate || ngx_quit) {                                            //是否退出
 
             for (i = 0; ngx_modules[i]; i++) {
-                if (ngx_modules[i]->exit_process) {
+                if (ngx_modules[i]->exit_process) {                                 //退出各个模块
                     ngx_modules[i]->exit_process(cycle);
                 }
             }
 
-            ngx_master_process_exit(cycle);
+            ngx_master_process_exit(cycle);                                         //退出进程
         }
 
-        if (ngx_reconfigure) {
+        if (ngx_reconfigure) {                                                      //重读配置
             ngx_reconfigure = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reconfiguring");
 
@@ -352,17 +355,24 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
 
     ngx_memzero(&ch, sizeof(ngx_channel_t));
 
+    /*传递给其他 worker 进程的命令*/
     ch.command = NGX_CMD_OPEN_CHANNEL;
 
     for (i = 0; i < n; i++) {
 
+        /*
+         *创建 worker 进程， ngx_worker_process_cycle 是函数指针
+         *在创建 worker 进程后调用，用来初始化worker进程的主循环
+         */
         ngx_spawn_process(cycle, ngx_worker_process_cycle,
                           (void *) (intptr_t) i, "worker process", type);
 
+        /*初始化 channle*/
         ch.pid = ngx_processes[ngx_process_slot].pid;
         ch.slot = ngx_process_slot;
         ch.fd = ngx_processes[ngx_process_slot].channel[0];
 
+        /*向之前创建 worker 进程传递这个 channel，worker 进程在接收到之后会更新自己的 ngx_processes 全局进程*/
         ngx_pass_open_channel(cycle, &ch);
     }
 }
@@ -734,12 +744,21 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
     ngx_process = NGX_PROCESS_WORKER;
 
+    /*
+     *初始化worker进程
+     *根据配置文件初始化worker进程，比如配置文件中的cpu亲缘性、priority、worker directory 等等
+     *同时关闭对端的 channel。还会调用所有模块的 init_process 回调函数
+     *最后调用 ngx_add_channel_event 将 channel 添加到事件循环中
+     */
+
     ngx_worker_process_init(cycle, worker);
 
     ngx_setproctitle("worker process");
 
+    /*worker 进程的事件循环*/
     for ( ;; ) {
 
+        /*如果 nginx 退出*/
         if (ngx_exiting) {
 
             c = cycle->connections;
@@ -760,12 +779,17 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
             {
                 ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "exiting");
 
+                /*
+                 *worker 进程退出，会调用所有模块的 exit_process 回调函数
+                 *销毁 cycle 生命周期的内存池，最后调用 exit(0)
+                 */
                 ngx_worker_process_exit(cycle);
             }
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
+        /*网络事件处理函数*/
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate) {
@@ -780,6 +804,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
                           "gracefully shutting down");
             ngx_setproctitle("worker process is shutting down");
 
+            /*关闭所有监听的socket*/
             if (!ngx_exiting) {
                 ngx_close_listening_sockets(cycle);
                 ngx_exiting = 1;
@@ -794,7 +819,9 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     }
 }
 
-
+/*
+ * 初始化 worker 进程
+ */
 static void
 ngx_worker_process_init(ngx_cycle_t *cycle, ngx_int_t worker)
 {
