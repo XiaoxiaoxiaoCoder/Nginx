@@ -12,7 +12,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/*
+ * 相应的日志等级
+ */
 #define NGX_LOG_STDERR            0
 #define NGX_LOG_EMERG             1
 #define NGX_LOG_ALERT             2
@@ -48,17 +50,17 @@ typedef void (*ngx_log_writer_pt) (ngx_log_t *log, ngx_uint_t level,
 
 
 struct ngx_log_s {
-    ngx_uint_t           log_level;
-    ngx_open_file_t     *file;
+    ngx_uint_t           log_level;                 //日志等级
+    ngx_open_file_t     *file;                      //日志文件
 
-    ngx_atomic_uint_t    connection;
+    ngx_atomic_uint_t    connection;                //链接数？
 
-    time_t               disk_full_time;
+    time_t               disk_full_time;            //磁盘满的时间
 
     ngx_log_handler_pt   handler;
     void                *data;
 
-    ngx_log_writer_pt    writer;
+    ngx_log_writer_pt    writer;                    //写日志函数
     void                *wdata;
 
     /*

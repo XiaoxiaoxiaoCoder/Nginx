@@ -97,8 +97,8 @@ struct ngx_open_file_s {
     ngx_fd_t              fd;                                                       //配置文件句柄 fd
     ngx_str_t             name;                                                     //配置文件名字
 
-    void                (*flush)(ngx_open_file_t *file, ngx_log_t *log);
-    void                 *data;
+    void                (*flush)(ngx_open_file_t *file, ngx_log_t *log);            //刷新的回调函数
+    void                 *data;                                                     //
 };
 
 
