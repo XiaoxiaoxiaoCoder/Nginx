@@ -15,7 +15,9 @@ ngx_os_io_t  ngx_io;
 
 static void ngx_drain_connections(void);
 
-
+/*
+ * 创建一个 ngx_listening_t 结构体
+ */
 ngx_listening_t *
 ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
 {
@@ -89,7 +91,9 @@ ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
     return ls;
 }
 
-
+/*
+ * 设置继承而来的socket 句柄
+ */
 ngx_int_t
 ngx_set_inherited_sockets(ngx_cycle_t *cycle)
 {
@@ -300,7 +304,9 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ * 打开监听句柄
+ */
 ngx_int_t
 ngx_open_listening_sockets(ngx_cycle_t *cycle)
 {
@@ -495,7 +501,9 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ * 配置监听句柄
+ */
 void
 ngx_configure_listening_sockets(ngx_cycle_t *cycle)
 {
@@ -514,7 +522,7 @@ ngx_configure_listening_sockets(ngx_cycle_t *cycle)
 
         if (ls[i].rcvbuf != -1) {
             if (setsockopt(ls[i].fd, SOL_SOCKET, SO_RCVBUF,
-                           (const void *) &ls[i].rcvbuf, sizeof(int))
+                           (const void *) &ls[i].rcvbuf, sizeof(int))           //recv 缓冲区大小
                 == -1)
             {
                 ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_socket_errno,
@@ -525,7 +533,7 @@ ngx_configure_listening_sockets(ngx_cycle_t *cycle)
 
         if (ls[i].sndbuf != -1) {
             if (setsockopt(ls[i].fd, SOL_SOCKET, SO_SNDBUF,
-                           (const void *) &ls[i].sndbuf, sizeof(int))
+                           (const void *) &ls[i].sndbuf, sizeof(int))           //send 缓冲区大小
                 == -1)
             {
                 ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_socket_errno,
@@ -535,7 +543,7 @@ ngx_configure_listening_sockets(ngx_cycle_t *cycle)
         }
 
         if (ls[i].keepalive) {
-            value = (ls[i].keepalive == 1) ? 1 : 0;
+            value = (ls[i].keepalive == 1) ? 1 : 0;                             //keeplive 选项
 
             if (setsockopt(ls[i].fd, SOL_SOCKET, SO_KEEPALIVE,
                            (const void *) &value, sizeof(int))
@@ -742,7 +750,9 @@ ngx_configure_listening_sockets(ngx_cycle_t *cycle)
     return;
 }
 
-
+/*
+ * 关闭监听句柄
+ */
 void
 ngx_close_listening_sockets(ngx_cycle_t *cycle)
 {
@@ -799,7 +809,7 @@ ngx_close_listening_sockets(ngx_cycle_t *cycle)
 
         if (ls[i].sockaddr->sa_family == AF_UNIX
             && ngx_process <= NGX_PROCESS_MASTER
-            && ngx_new_binary == 0)
+            && ngx_new_binary == 0)                                 //unix 域
         {
             u_char *name = ls[i].addr_text.data + sizeof("unix:") - 1;
 
@@ -817,7 +827,9 @@ ngx_close_listening_sockets(ngx_cycle_t *cycle)
     cycle->listening.nelts = 0;
 }
 
-
+/*
+ * 获取一个 ngx_connection_t
+ */
 ngx_connection_t *
 ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
 {
@@ -860,7 +872,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
     rev = c->read;
     wev = c->write;
 
-    ngx_memzero(c, sizeof(ngx_connection_t));
+    ngx_memzero(c, sizeof(ngx_connection_t));           //重置相关属性
 
     c->read = rev;
     c->write = wev;
@@ -886,7 +898,9 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
     return c;
 }
 
-
+/*
+ * 释放一个 connection
+ */
 void
 ngx_free_connection(ngx_connection_t *c)
 {
@@ -899,7 +913,9 @@ ngx_free_connection(ngx_connection_t *c)
     }
 }
 
-
+/*
+ * 关闭一个 connection
+ */
 void
 ngx_close_connection(ngx_connection_t *c)
 {
@@ -984,7 +1000,9 @@ ngx_close_connection(ngx_connection_t *c)
     }
 }
 
-
+/*
+ * 重用 connection
+ */
 void
 ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
 {
@@ -1013,7 +1031,9 @@ ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
     }
 }
 
-
+/*
+ * 排除一个 connection
+ */
 static void
 ngx_drain_connections(void)
 {
@@ -1037,7 +1057,9 @@ ngx_drain_connections(void)
     }
 }
 
-
+/*
+ * 将本地地址转换成网络地址
+ */
 ngx_int_t
 ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
     ngx_uint_t port)
@@ -1109,7 +1131,9 @@ ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
     return NGX_OK;
 }
 
-
+/*
+ * connection 错误
+ */
 ngx_int_t
 ngx_connection_error(ngx_connection_t *c, ngx_err_t err, char *text)
 {

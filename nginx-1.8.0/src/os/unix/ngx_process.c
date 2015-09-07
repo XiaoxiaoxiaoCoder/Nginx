@@ -30,7 +30,7 @@ int              ngx_argc;          //参数个数
 char           **ngx_argv;          //参数内容
 char           **ngx_os_argv;       //系统参数内容
 
-ngx_int_t        ngx_process_slot;
+ngx_int_t        ngx_process_slot;  //当前进程表被使用的下标
 ngx_socket_t     ngx_channel;
 ngx_int_t        ngx_last_process;
 ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];
@@ -82,7 +82,9 @@ ngx_signal_t  signals[] = {
     { 0, NULL, "", NULL }
 };
 
-
+/*
+ * 创建进程
+ */
 ngx_pid_t
 ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
     char *name, ngx_int_t respawn)
@@ -200,7 +202,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
         ngx_close_channel(ngx_processes[s].channel, cycle->log);
         return NGX_INVALID_PID;
 
-    case 0:
+    case 0:                         //子进程
         ngx_pid = ngx_getpid();
         proc(cycle, data);
         break;
@@ -264,7 +266,9 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
     return pid;
 }
 
-
+/*
+ * 执行一个新进程
+ */
 ngx_pid_t
 ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx)
 {
@@ -272,7 +276,9 @@ ngx_execute(ngx_cycle_t *cycle, ngx_exec_ctx_t *ctx)
                              NGX_PROCESS_DETACHED);
 }
 
-
+/*
+ * 启动一个新进程
+ */
 static void
 ngx_execute_proc(ngx_cycle_t *cycle, void *data)
 {
@@ -287,7 +293,9 @@ ngx_execute_proc(ngx_cycle_t *cycle, void *data)
     exit(1);
 }
 
-
+/*
+ * 初始化信号
+ */
 ngx_int_t
 ngx_init_signals(ngx_log_t *log)
 {
@@ -313,7 +321,9 @@ ngx_init_signals(ngx_log_t *log)
     return NGX_OK;
 }
 
-
+/*
+ * 处理信号事件
+ */
 void
 ngx_signal_handler(int signo)
 {
@@ -456,7 +466,9 @@ ngx_signal_handler(int signo)
     ngx_set_errno(err);
 }
 
-
+/*
+ * 获取进程状态
+ */
 static void
 ngx_process_get_status(void)
 {
@@ -550,7 +562,9 @@ ngx_process_get_status(void)
     }
 }
 
-
+/*
+ * 解锁
+ */
 static void
 ngx_unlock_mutexes(ngx_pid_t pid)
 {
@@ -617,7 +631,9 @@ ngx_debug_point(void)
     }
 }
 
-
+/*
+ * 对指定的进程号pid 发送信号 name
+ */
 ngx_int_t
 ngx_os_signal_process(ngx_cycle_t *cycle, char *name, ngx_int_t pid)
 {

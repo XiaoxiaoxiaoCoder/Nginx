@@ -28,11 +28,11 @@ typedef struct {
 
 
 struct ngx_event_s {
-    void            *data;
+    void            *data;                      //指向event所属，一般都 ngx_connection_t
 
     unsigned         write:1;
 
-    unsigned         accept:1;
+    unsigned         accept:1;                  //监听event
 
     /* used to detect the stale events in kqueue, rtsig, and epoll */
     unsigned         instance:1;
@@ -41,12 +41,12 @@ struct ngx_event_s {
      * the event was passed or would be passed to a kernel;
      * in aio mode - operation was posted.
      */
-    unsigned         active:1;
+    unsigned         active:1;                  //活跃事件
 
-    unsigned         disabled:1;
+    unsigned         disabled:1;                //失效的
 
     /* the ready event; in aio mode 0 means that no operation can be posted */
-    unsigned         ready:1;
+    unsigned         ready:1;                   //有事件等待处理
 
     unsigned         oneshot:1;
 
@@ -100,7 +100,7 @@ struct ngx_event_s {
     unsigned         available:1;
 #endif
 
-    ngx_event_handler_pt  handler;
+    ngx_event_handler_pt  handler;              //事件处理函数
 
 
 #if (NGX_HAVE_AIO)
@@ -117,7 +117,7 @@ struct ngx_event_s {
 
     ngx_log_t       *log;
 
-    ngx_rbtree_node_t   timer;
+    ngx_rbtree_node_t   timer;                  //超时时间
 
     /* the posted queue */
     ngx_queue_t      queue;
@@ -438,7 +438,7 @@ typedef struct {
     ngx_uint_t    use;                      //使用的事件模块的 下标
 
     ngx_flag_t    multi_accept;
-    ngx_flag_t    accept_mutex;
+    ngx_flag_t    accept_mutex;             //是否使用 accept 锁
 
     ngx_msec_t    accept_mutex_delay;
 

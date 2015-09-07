@@ -16,9 +16,9 @@
 
 typedef struct {
      ngx_uint_t  command;
-     ngx_pid_t   pid;
-     ngx_int_t   slot;
-     ngx_fd_t    fd;
+     ngx_pid_t   pid;           //进程Id
+     ngx_int_t   slot;          //进程在全局进程表(数组)中的下标
+     ngx_fd_t    fd;            //通信fd
 } ngx_channel_t;
 
 

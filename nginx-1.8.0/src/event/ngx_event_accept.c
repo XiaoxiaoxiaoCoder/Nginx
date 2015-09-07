@@ -14,7 +14,9 @@ static ngx_int_t ngx_enable_accept_events(ngx_cycle_t *cycle);
 static ngx_int_t ngx_disable_accept_events(ngx_cycle_t *cycle);
 static void ngx_close_accepted_connection(ngx_connection_t *c);
 
-
+/*
+ * accpet 新连接到来
+ */
 void
 ngx_event_accept(ngx_event_t *ev)
 {
@@ -32,7 +34,7 @@ ngx_event_accept(ngx_event_t *ev)
     static ngx_uint_t  use_accept4 = 1;
 #endif
 
-    if (ev->timedout) {
+    if (ev->timedout) {         //这个是干嘛的？
         if (ngx_enable_accept_events((ngx_cycle_t *) ngx_cycle) != NGX_OK) {
             return;
         }
@@ -366,10 +368,13 @@ ngx_event_accept(ngx_event_t *ev)
     } while (ev->available);
 }
 
-
+/*
+ * 尝试上锁 accept mutex
+ */
 ngx_int_t
 ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 {
+    /*ngx_shmtx_trylock 是非阻塞去锁，返回1表示成功，0表示没有取到锁*/
     if (ngx_shmtx_trylock(&ngx_accept_mutex)) {
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
@@ -382,13 +387,13 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
             return NGX_OK;
         }
 
-        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {
+        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {         //将 listening socket 句柄加入事件中
             ngx_shmtx_unlock(&ngx_accept_mutex);
             return NGX_ERROR;
         }
-
+        /*ngx_accept_mutex_held 置为1，表示取到了锁，返回*/
         ngx_accept_events = 0;
-        ngx_accept_mutex_held = 1;
+        ngx_accept_mutex_held = 1;                                  //拥有锁
 
         return NGX_OK;
     }
@@ -396,6 +401,7 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "accept mutex lock failed: %ui", ngx_accept_mutex_held);
 
+    /*没有拿到锁，将监听句柄从 epoll 中取出*/
     if (ngx_accept_mutex_held) {
         if (ngx_disable_accept_events(cycle) == NGX_ERROR) {
             return NGX_ERROR;
@@ -407,7 +413,9 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ * 将 listening 句柄加入事件分发中
+ */
 static ngx_int_t
 ngx_enable_accept_events(ngx_cycle_t *cycle)
 {
@@ -440,7 +448,9 @@ ngx_enable_accept_events(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ * 将 listening 句柄从事件分发中删除
+ */
 static ngx_int_t
 ngx_disable_accept_events(ngx_cycle_t *cycle)
 {
@@ -474,7 +484,9 @@ ngx_disable_accept_events(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
+/*
+ * 关闭 accept 句柄
+ */
 static void
 ngx_close_accepted_connection(ngx_connection_t *c)
 {

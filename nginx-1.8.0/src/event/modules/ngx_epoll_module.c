@@ -817,6 +817,10 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
             rev->ready = 1;
 
+            /*
+             *有 NGX_POST_EVENTS标志，就把 accept 事件放到 ngx_posted_accept_events 队列中
+             *把正常的事件放到 ngx_post_events 队列中延迟处理        
+             */
             if (flags & NGX_POST_EVENTS) {
                 queue = rev->accept ? &ngx_posted_accept_events
                                     : &ngx_posted_events;

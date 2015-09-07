@@ -26,8 +26,8 @@ typedef struct {
     ngx_atomic_t  *lock;
 #if (NGX_HAVE_POSIX_SEM)
     ngx_atomic_t  *wait;
-    ngx_uint_t     semaphore;
-    sem_t          sem;
+    ngx_uint_t     semaphore;           //信号量相关
+    sem_t          sem;                 //信号量
 #endif
 #else
     ngx_fd_t       fd;

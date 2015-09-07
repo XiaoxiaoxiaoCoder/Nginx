@@ -39,7 +39,7 @@ static char *ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf);
 static ngx_uint_t     ngx_timer_resolution;
 sig_atomic_t          ngx_event_timer_alarm;
 
-static ngx_uint_t     ngx_event_max_module;
+static ngx_uint_t     ngx_event_max_module;         //event 模块的计数
 
 ngx_uint_t            ngx_event_flags;              //全局变量，真正的事件处理模块的标志
 ngx_event_actions_t   ngx_event_actions;            //全局变量，表示真正的事件处理模块的处理方式
@@ -51,11 +51,11 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
 ngx_shmtx_t           ngx_accept_mutex;
-ngx_uint_t            ngx_use_accept_mutex;
+ngx_uint_t            ngx_use_accept_mutex;         //是否使用 accept 锁，全局变量
 ngx_uint_t            ngx_accept_events;
-ngx_uint_t            ngx_accept_mutex_held;
+ngx_uint_t            ngx_accept_mutex_held;        //是否拥有accept锁
 ngx_msec_t            ngx_accept_mutex_delay;
-ngx_int_t             ngx_accept_disabled;
+ngx_int_t             ngx_accept_disabled;          //是否停止accpet，因为连接过多
 
 
 #if (NGX_STAT_STUB)
@@ -231,20 +231,36 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 #endif
     }
 
-    /*检查锁*/
+    /* ngx_use_accept_mutex 表示是否需要通过 accept 加锁来解决惊群问题。 当 nginx worker 进程 > 1 时且配置文件中打开了
+     * accept_mutex 时，这个表示为 1*/
     if (ngx_use_accept_mutex) {
+        /*
+         *ngx_accept_disable表示此时满负荷，没必要处理新连接了，当链接数达到7/8时，ngx_accept_disabled为正时，说明 nginx worker进程
+         *非常繁忙，将不再处理新连接，这也是个简单的负载均衡
+         */
         if (ngx_accept_disabled > 0) {
             ngx_accept_disabled--;
 
         } else {
-            if (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) {
+            /*
+             *获得accept锁，多个worker仅有一个可以得到这把锁。获得锁的不是阻塞过程，都是立刻返回，获取成功的话
+             *ngx_accept_mutex_held 置为1。拿到锁，意味着监听句柄被放到 epoll 中，如果没拿到锁，则监听句柄从epoll中取出
+             */
+            if (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) {         //使用锁，尝试上锁
                 return;
             }
-
+            /*
+             *拿到锁的话，置flag为 NGX_POST_EVENTS，这意味着ngx_proces_evetns 函数中，任何事件都将延后处理，会把 accept 事件都放到
+             *ngx_post_accept_events链表中， epollin|epollout事件都放到ngx_posted_evetns链表中
+             */
             if (ngx_accept_mutex_held) {
                 flags |= NGX_POST_EVENTS;
 
             } else {
+                /*
+                 *拿不到锁，也不会处理监听句柄，这个timer实际上是传给 epoll_wait的超时时间，修改尾最大 ngx_accept_mutex_delay
+                 *意味着 epoll_wait 更短的超时返回，以免新连接长时间没有得到处理
+                 */
                 if (timer == NGX_TIMER_INFINITE
                     || timer > ngx_accept_mutex_delay)
                 {
@@ -263,6 +279,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "timer delta: %M", delta);
 
+    /*处理新连接请求*/
     ngx_event_process_posted(cycle, &ngx_posted_accept_events);
 
     if (ngx_accept_mutex_held) {
@@ -272,11 +289,13 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     if (delta) {
         ngx_event_expire_timers();
     }
-
+    /*处理正常的数据读写请求, 因为这些请求耗时许久，延迟到锁释放了再处理*/
     ngx_event_process_posted(cycle, &ngx_posted_events);
 }
 
-
+/*
+ * 处理一个读事件，根据情况选择添加或删除事件
+ */
 ngx_int_t
 ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
 {
@@ -344,7 +363,9 @@ ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
     return NGX_OK;
 }
 
-
+/*
+ * 处理一个写事件
+ */
 ngx_int_t
 ngx_handle_write_event(ngx_event_t *wev, size_t lowat)
 {
@@ -977,7 +998,9 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置配置项 链接数
+ */
 static char *
 ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1009,7 +1032,9 @@ ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/*
+ * 设置事件分发方式
+ */
 static char *
 ngx_event_use(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

@@ -34,11 +34,11 @@ ngx_pid_t     ngx_pid;                  //进程Id
 sig_atomic_t  ngx_reap;
 sig_atomic_t  ngx_sigio;
 sig_atomic_t  ngx_sigalrm;
-sig_atomic_t  ngx_terminate;
-sig_atomic_t  ngx_quit;
+sig_atomic_t  ngx_terminate;            //终止
+sig_atomic_t  ngx_quit;                 //退出
 sig_atomic_t  ngx_debug_quit;
 ngx_uint_t    ngx_exiting;
-sig_atomic_t  ngx_reconfigure;
+sig_atomic_t  ngx_reconfigure;          //重新读取配置
 sig_atomic_t  ngx_reopen;
 
 sig_atomic_t  ngx_change_binary;
@@ -67,7 +67,9 @@ static ngx_cycle_t      ngx_exit_cycle;
 static ngx_log_t        ngx_exit_log;
 static ngx_open_file_t  ngx_exit_log_file;
 
-
+/*
+ * master 进程循环处理
+ */
 void
 ngx_master_process_cycle(ngx_cycle_t *cycle)
 {
@@ -89,14 +91,14 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigaddset(&set, SIGALRM);
     sigaddset(&set, SIGIO);
     sigaddset(&set, SIGINT);
-    sigaddset(&set, ngx_signal_value(NGX_RECONFIGURE_SIGNAL));
-    sigaddset(&set, ngx_signal_value(NGX_REOPEN_SIGNAL));
-    sigaddset(&set, ngx_signal_value(NGX_NOACCEPT_SIGNAL));
-    sigaddset(&set, ngx_signal_value(NGX_TERMINATE_SIGNAL));
-    sigaddset(&set, ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
-    sigaddset(&set, ngx_signal_value(NGX_CHANGEBIN_SIGNAL));
+    sigaddset(&set, ngx_signal_value(NGX_RECONFIGURE_SIGNAL));      //SIGHUP
+    sigaddset(&set, ngx_signal_value(NGX_REOPEN_SIGNAL));           //SIGUSR1
+    sigaddset(&set, ngx_signal_value(NGX_NOACCEPT_SIGNAL));         //SIGWINCH
+    sigaddset(&set, ngx_signal_value(NGX_TERMINATE_SIGNAL));        //SIGTERM
+    sigaddset(&set, ngx_signal_value(NGX_SHUTDOWN_SIGNAL));         //SIGQUIT
+    sigaddset(&set, ngx_signal_value(NGX_CHANGEBIN_SIGNAL));        //SIGUSR2
 
-    if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
+    if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {                 //屏蔽信号集
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "sigprocmask() failed");
     }
@@ -162,7 +164,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
 
-        sigsuspend(&set);
+        sigsuspend(&set);                   //挂起进程
 
         ngx_time_update();
 

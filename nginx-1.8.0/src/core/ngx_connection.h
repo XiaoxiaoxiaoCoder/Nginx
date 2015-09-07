@@ -16,16 +16,16 @@
 typedef struct ngx_listening_s  ngx_listening_t;
 
 struct ngx_listening_s {
-    ngx_socket_t        fd;
+    ngx_socket_t        fd;                         //句柄
 
-    struct sockaddr    *sockaddr;
+    struct sockaddr    *sockaddr;                   //地址
     socklen_t           socklen;    /* size of sockaddr */
     size_t              addr_text_max_len;
     ngx_str_t           addr_text;
 
-    int                 type;
+    int                 type;                       //类型
 
-    int                 backlog;
+    int                 backlog;                    //监听队列
     int                 rcvbuf;
     int                 sndbuf;
 #if (NGX_HAVE_KEEPALIVE_TUNABLE)
@@ -35,7 +35,7 @@ struct ngx_listening_s {
 #endif
 
     /* handler of accepted connection */
-    ngx_connection_handler_pt   handler;
+    ngx_connection_handler_pt   handler;            //connet回调函数
 
     void               *servers;  /* array of ngx_http_in_addr_t, for example */
 
@@ -116,18 +116,18 @@ typedef enum {
 
 
 struct ngx_connection_s {
-    void               *data;
-    ngx_event_t        *read;
-    ngx_event_t        *write;
+    void               *data;                           //指向下一个 connection
+    ngx_event_t        *read;                           //读事件
+    ngx_event_t        *write;                          //写事件
 
-    ngx_socket_t        fd;
+    ngx_socket_t        fd;                             //fd
 
-    ngx_recv_pt         recv;
+    ngx_recv_pt         recv;                           //相关读写回调函数
     ngx_send_pt         send;
     ngx_recv_chain_pt   recv_chain;
     ngx_send_chain_pt   send_chain;
 
-    ngx_listening_t    *listening;
+    ngx_listening_t    *listening;                      //listening
 
     off_t               sent;
 

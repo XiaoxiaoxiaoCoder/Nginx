@@ -24,9 +24,9 @@ typedef struct {
     int                 status;                 //进程退出的状态
     ngx_socket_t        channel[2];             //进程的chanel，通过 socketpair 创建的
 
-    ngx_spawn_proc_pt   proc;                   //进程的初始化函数，在每次创建完 worker 进程时调用
+    ngx_spawn_proc_pt   proc;                   //进程的初始化函数，在每次创建完 worker 进程时调用 ngx_worker_process_cycle
     void               *data;                   //向进程初始化函数传递的参数
-    char               *name;
+    char               *name;                   //进程名
     
     //进程的状态
     unsigned            respawn:1;              
