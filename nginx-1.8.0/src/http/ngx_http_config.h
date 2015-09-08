@@ -15,23 +15,62 @@
 
 
 typedef struct {
+    /*
+     *所有模块的main config 数组
+     */
     void        **main_conf;
+
+    /*
+     *所有模块的 server config 数组
+     */
     void        **srv_conf;
+
+    /*
+     *所哟模块的location config 数组
+     */
     void        **loc_conf;
 } ngx_http_conf_ctx_t;
 
 
 typedef struct {
+    /*
+     *在解析配置文件中 http{} 配置块前调用
+     */
     ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);
+
+    /*
+     *在解析配置文件中http{} 配置块后调用
+     */
     ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);
 
+    /*
+     *创建http模块的 main config
+     */
     void       *(*create_main_conf)(ngx_conf_t *cf);
+
+    /*
+     *初始化http模块的 main config
+     */
     char       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
 
+    /*
+     *创建http模块的 server config
+     */
     void       *(*create_srv_conf)(ngx_conf_t *cf);
+
+    /*
+     *合并http模块中的server config，用于实现server config到main config的指令继承、覆盖
+     */
     char       *(*merge_srv_conf)(ngx_conf_t *cf, void *prev, void *conf);
 
+    /*
+     *创建http模块的 location config
+     */
     void       *(*create_loc_conf)(ngx_conf_t *cf);
+
+    /*
+     *合并http模块的location config，用于实现 location config到 server config的指令继承、覆盖
+     */
     char       *(*merge_loc_conf)(ngx_conf_t *cf, void *prev, void *conf);
 } ngx_http_module_t;
 

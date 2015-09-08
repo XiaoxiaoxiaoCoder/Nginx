@@ -28,9 +28,9 @@ typedef struct {
 
 
 struct ngx_event_s {
-    void            *data;                      //指向event所属，一般都 ngx_connection_t
+    void            *data;                      //指向event所属，一般都是 ngx_connection_t
 
-    unsigned         write:1;
+    unsigned         write:1;                   //写事件？
 
     unsigned         accept:1;                  //监听event
 
@@ -100,7 +100,7 @@ struct ngx_event_s {
     unsigned         available:1;
 #endif
 
-    ngx_event_handler_pt  handler;              //事件处理函数
+    ngx_event_handler_pt  handler;              //事件处理函数,当有事件到来延迟处理时候回调
 
 
 #if (NGX_HAVE_AIO)

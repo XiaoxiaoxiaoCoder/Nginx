@@ -35,7 +35,7 @@ struct ngx_listening_s {
 #endif
 
     /* handler of accepted connection */
-    ngx_connection_handler_pt   handler;            //connet回调函数
+    ngx_connection_handler_pt   handler;            //connet回调函数,当有新连接connect上来时候回调
 
     void               *servers;  /* array of ngx_http_in_addr_t, for example */
 
