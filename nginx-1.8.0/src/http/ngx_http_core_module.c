@@ -2979,7 +2979,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    http_ctx = cf->ctx;
+    http_ctx = cf->ctx;                         //全局http module 配置
     ctx->main_conf = http_ctx->main_conf;
 
     /* the server{}'s srv_conf */

@@ -159,29 +159,71 @@ typedef struct {
 
 
 typedef struct {
+    /*
+     *存储所有的 ngx_http_core_srv_conf_t 元素个数等于 server 个数
+     */
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t */
 
+    /*
+     *包含所有phase，以及注册的phase handler，这些handler在处理http请求时，会被依次调用
+     *通过ngx_http_phase_hander_t的next字段串联起来组成一个链表
+     */
     ngx_http_phase_engine_t    phase_engine;
 
+    /*
+     *以hash存储的所有 request header
+     */
     ngx_hash_t                 headers_in_hash;
 
+    /*
+     *被索引的nginx变量，比如通过rewrite模块的set指令设置的变量，会在这个hash中分配空间
+     *而诸如 $http_xxx和$cookie_xxx等内建变量不会在此分配空间
+     */
     ngx_hash_t                 variables_hash;
 
+    /*
+     *ngx_http_variable_t类型的数组，所有被索引的nginx变量存储在这个数组中
+     *ngx_http_variable_t结构中有属性index，是该变量在这个数值中的下标
+     */
     ngx_array_t                variables;       /* ngx_http_variable_t */
     ngx_uint_t                 ncaptures;
 
+    /*
+     *server name的hash表的允许的最大 buncket 数量，默认是512
+     */
     ngx_uint_t                 server_names_hash_max_size;
+
+    /*
+     *server name的hash表中每个桶允许占用的最大空间，默认值是 ngx_cacheline_size
+     */
     ngx_uint_t                 server_names_hash_bucket_size;
 
+    /*
+     *variables的hash表允许的最大bucket数量，默认值是512
+     */
     ngx_uint_t                 variables_hash_max_size;
+
+    /*
+     *variables的hash表中每个桶允许占用的最大空间，默认值是64
+     */
     ngx_uint_t                 variables_hash_bucket_size;
 
+    /*
+     *主要用于初始化variables_hash变量。以hash方式存储所有的变量名，同时还保存变量名和变量内容的kv对数组
+     *ngx_hash_t 就是以这个数组进行初始化的。这个变量临时的，只在解析配置文件时有效，初始化variables_hash后会被置为NULL
+     */
     ngx_hash_keys_arrays_t    *variables_keys;
 
+    /*
+     *监听的所有端口，ngx_http_port_t 类型，其中包含socket地址信息
+     */
     ngx_array_t               *ports;
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
+    /*
+     *所有phase的数组，其中每个元素是该phase上注册的handler的数组
+     */
     ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
 } ngx_http_core_main_conf_t;
 

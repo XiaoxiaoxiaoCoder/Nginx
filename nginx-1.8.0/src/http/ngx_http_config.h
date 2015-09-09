@@ -90,7 +90,9 @@ typedef struct {
 #define NGX_HTTP_SRV_CONF_OFFSET   offsetof(ngx_http_conf_ctx_t, srv_conf)
 #define NGX_HTTP_LOC_CONF_OFFSET   offsetof(ngx_http_conf_ctx_t, loc_conf)
 
-
+/*
+ * 用于获取 http 模块的 main、srv、loc 配置信息
+ */
 #define ngx_http_get_module_main_conf(r, module)                             \
     (r)->main_conf[module.ctx_index]
 #define ngx_http_get_module_srv_conf(r, module)  (r)->srv_conf[module.ctx_index]

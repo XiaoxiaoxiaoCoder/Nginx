@@ -19,38 +19,40 @@
  *    TT        command type, i.e. HTTP "location" or "server" command
  */
 
-#define NGX_CONF_NOARGS      0x00000001
-#define NGX_CONF_TAKE1       0x00000002
-#define NGX_CONF_TAKE2       0x00000004
-#define NGX_CONF_TAKE3       0x00000008
-#define NGX_CONF_TAKE4       0x00000010
-#define NGX_CONF_TAKE5       0x00000020
-#define NGX_CONF_TAKE6       0x00000040
-#define NGX_CONF_TAKE7       0x00000080
+#define NGX_CONF_NOARGS      0x00000001         //配置项不带任何参数
+#define NGX_CONF_TAKE1       0x00000002         //配置项必须带1个参数
+#define NGX_CONF_TAKE2       0x00000004         //配置项必须带2个参数
+#define NGX_CONF_TAKE3       0x00000008         //配置项必须带3个参数
+#define NGX_CONF_TAKE4       0x00000010         //配置项必须带4个参数
+#define NGX_CONF_TAKE5       0x00000020         //配置项必须带5个参数
+#define NGX_CONF_TAKE6       0x00000040         //配置项必须带6个参数
+#define NGX_CONF_TAKE7       0x00000080         //配置项必须带7个参数
 
 #define NGX_CONF_MAX_ARGS    8
 
-#define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)
-#define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)
+#define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)        //配置项可以带1个或2个参数
+#define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)        //配置项可以带1个或3个参数
 
-#define NGX_CONF_TAKE23      (NGX_CONF_TAKE2|NGX_CONF_TAKE3)
+#define NGX_CONF_TAKE23      (NGX_CONF_TAKE2|NGX_CONF_TAKE3)        //配置项可以带2个或3个参数
 
-#define NGX_CONF_TAKE123     (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3)
-#define NGX_CONF_TAKE1234    (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3   \
+#define NGX_CONF_TAKE123     (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3)     //配置项可以带1~3个参数
+#define NGX_CONF_TAKE1234    (NGX_CONF_TAKE1|NGX_CONF_TAKE2|NGX_CONF_TAKE3   \  //配置项可以带1~4个参数
                               |NGX_CONF_TAKE4)
 
 #define NGX_CONF_ARGS_NUMBER 0x000000ff
-#define NGX_CONF_BLOCK       0x00000100
+#define NGX_CONF_BLOCK       0x00000100     //块指令
 #define NGX_CONF_FLAG        0x00000200
 #define NGX_CONF_ANY         0x00000400
 #define NGX_CONF_1MORE       0x00000800
 #define NGX_CONF_2MORE       0x00001000
 #define NGX_CONF_MULTI       0x00000000  /* compatibility */
 
-#define NGX_DIRECT_CONF      0x00010000
+#define NGX_DIRECT_CONF      0x00010000     //一般有 NGX_CORE_MODULE 类型的核心模块使用，仅与 NGX_MAIN_CONF 同时设置，表示模块需要解析
+                                            //不属于任何{}内的全局配置项。它实际上会指定set方法里的第三个参数conf的值，使之指向每个模块解析
+                                            //全局配置项的配置结构体
 
-#define NGX_MAIN_CONF        0x01000000
-#define NGX_ANY_CONF         0x0F000000
+#define NGX_MAIN_CONF        0x01000000     //配置项可以出现在全局配置中，即不属于任何{}配置块
+#define NGX_ANY_CONF         0x0F000000     //
 
 
 

@@ -66,7 +66,7 @@ static ngx_int_t ngx_http_add_addrs6(ngx_conf_t *cf, ngx_http_port_t *hport,
     ngx_http_conf_addr_t *addr);
 #endif
 
-ngx_uint_t   ngx_http_max_module;
+ngx_uint_t   ngx_http_max_module;           //http 模块数
 
 
 ngx_http_output_header_filter_pt  ngx_http_top_header_filter;
@@ -99,7 +99,9 @@ static ngx_core_module_t  ngx_http_module_ctx = {
     NULL
 };
 
-
+/*
+ * http 核心模块，负责解析所有 http module
+ */
 ngx_module_t  ngx_http_module = {
     NGX_MODULE_V1,
     &ngx_http_module_ctx,                  /* module context */
@@ -137,11 +139,18 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    /*
+     *将传递进来的 conf 复制为 ctx，即 ngx_http_conf_ctx_t 类型。
+     *这个conf是ngx_cycle->conf_ctx数组中的元素，而这个元素就是
+     *ngx_http_module模块所对应的config信息。所以这一步就完成了
+     *ngx_http_module模块的config信息初始化
+     */
     *(ngx_http_conf_ctx_t **) conf = ctx;
 
 
     /* count the number of the http modules and set up their indices */
 
+    /*对所有 http module 进行计数，并更新ctx_index 属性*/
     ngx_http_max_module = 0;
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
@@ -151,6 +160,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_modules[m]->ctx_index = ngx_http_max_module++;
     }
 
+    /*根据http模块数量为ctx的main、srv和loc数组分配空间*/
 
     /* the http main_conf context, it is the same in the all http contexts */
 
@@ -188,6 +198,10 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * of the all http modules
      */
 
+    /*
+     *调用所有http module 的回调函数，创建 http module的main、server和location的配置结构
+     *并更新ctx的main_conf、srv_conf、loc_conf 数组
+     */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -218,9 +232,12 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+    /*先保存 cf 的副本，待所有http module的指令解析完再回复*/
     pcf = *cf;
+    /*把解析 http module的指令的上下文设置为 ngx_http_conf_ctx_t*/
     cf->ctx = ctx;
 
+    /*调用http module 的 preconfiguration 回调函数*/
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -237,9 +254,9 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* parse inside the http{} block */
 
-    cf->module_type = NGX_HTTP_MODULE;
-    cf->cmd_type = NGX_HTTP_MAIN_CONF;
-    rv = ngx_conf_parse(cf, NULL);
+    cf->module_type = NGX_HTTP_MODULE;              //只解析 NGX_HTTP_MODULE 模块的指令，即 http module的指令
+    cf->cmd_type = NGX_HTTP_MAIN_CONF;              //只解析 NGX_HTTP_MAIN_CONF 类型的指令
+    rv = ngx_conf_parse(cf, NULL);                  //只有符合 module_type和cmd_type的指令才会被解析
 
     if (rv != NGX_CONF_OK) {
         goto failed;
