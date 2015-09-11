@@ -37,7 +37,7 @@ static char *ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
 static ngx_uint_t     ngx_timer_resolution;
-sig_atomic_t          ngx_event_timer_alarm;
+sig_atomic_t          ngx_event_timer_alarm;        //为1时表示需要更新时间
 
 static ngx_uint_t     ngx_event_max_module;         //event 模块的计数
 
@@ -673,7 +673,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #if !(NGX_WIN32)
 
-    if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
+    if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {     //控制时间精度
         struct sigaction  sa;
         struct itimerval  itv;
 

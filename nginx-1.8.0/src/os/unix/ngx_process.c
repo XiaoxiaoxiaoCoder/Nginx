@@ -26,14 +26,14 @@ static void ngx_process_get_status(void);
 static void ngx_unlock_mutexes(ngx_pid_t pid);
 
 
-int              ngx_argc;          //参数个数
-char           **ngx_argv;          //参数内容
-char           **ngx_os_argv;       //系统参数内容
+int              ngx_argc;                          //参数个数
+char           **ngx_argv;                          //参数内容
+char           **ngx_os_argv;                       //系统参数内容
 
-ngx_int_t        ngx_process_slot;  //当前进程表被使用的下标
+ngx_int_t        ngx_process_slot;                  //当前进程表被使用的下标
 ngx_socket_t     ngx_channel;
-ngx_int_t        ngx_last_process;
-ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];
+ngx_int_t        ngx_last_process;                  //ngx_processes数组中有意义的 ngx_process_t 元素最大的下表
+ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];  //存储所有子进程的数组
 
 
 ngx_signal_t  signals[] = {
