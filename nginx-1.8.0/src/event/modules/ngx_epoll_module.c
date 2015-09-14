@@ -138,10 +138,14 @@ static ngx_connection_t     notify_conn;
 
 #if (NGX_HAVE_FILE_AIO)
 
+/*用于通知异步I/O事件的描述符，它与iocb结构体中的aio_resfd成员是一致的*/
 int                         ngx_eventfd = -1;
+/*异步I/O的上下文，全局唯一，必须经过io_setup的初始化才能使用*/
 aio_context_t               ngx_aio_ctx = 0;
 
+/*异步I/O事件完成后进行通知的描述符，也就是ngx_eventfd所对应的ngx_event_t事件*/
 static ngx_event_t          ngx_eventfd_event;
+/*异步I/O事件完成后进行通知的描述符ngx_eventfd所对应的 ngx_connection_t 连接*/
 static ngx_connection_t     ngx_eventfd_conn;
 
 #endif
@@ -266,18 +270,21 @@ ngx_epoll_aio_init(ngx_cycle_t *cycle, ngx_epoll_conf_t *epcf)
 
     n = 1;
 
+    /*设置ngx_eventfd为非阻塞*/
     if (ioctl(ngx_eventfd, FIONBIO, &n) == -1) {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                       "ioctl(eventfd, FIONBIO) failed");
         goto failed;
     }
 
+    /*初始化文件异步 I/O 的上下文*/
     if (io_setup(epcf->aio_requests, &ngx_aio_ctx) == -1) {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                       "io_setup() failed");
         goto failed;
     }
 
+    /*设置用于异步I/O完成通知的 ngx_eventfd_event 事件，它与 ngx_eventfd_conn 连接对应*/
     ngx_eventfd_event.data = &ngx_eventfd_conn;
     ngx_eventfd_event.handler = ngx_epoll_eventfd_handler;
     ngx_eventfd_event.log = cycle->log;
@@ -289,6 +296,7 @@ ngx_epoll_aio_init(ngx_cycle_t *cycle, ngx_epoll_conf_t *epcf)
     ee.events = EPOLLIN|EPOLLET;
     ee.data.ptr = &ngx_eventfd_conn;
 
+    /*向epoll中添加异步I/O通知描述符 ngx_eventfd*/
     if (epoll_ctl(ep, EPOLL_CTL_ADD, ngx_eventfd, &ee) != -1) {
         return;
     }
@@ -902,11 +910,12 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev)
     ngx_err_t         err;
     ngx_event_t      *e;
     ngx_event_aio_t  *aio;
-    struct io_event   event[64];
+    struct io_event   event[64];        //一次性最多处理64个事件
     struct timespec   ts;
 
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ev->log, 0, "eventfd handler");
 
+    /*获取已经完成的事件数目，并设置到ready中，注意，这个ready是可以大于64的*/
     n = read(ngx_eventfd, &ready, 8);
 
     err = ngx_errno;
@@ -931,8 +940,10 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev)
     ts.tv_sec = 0;
     ts.tv_nsec = 0;
 
+    /*ready表示还未处理的事件*/
     while (ready) {
 
+        /*调用 io_getevents 获取已经玩到的异步I/O事件*/
         events = io_getevents(ngx_aio_ctx, 1, 64, event, &ts);
 
         ngx_log_debug1(NGX_LOG_DEBUG_EVENT, ev->log, 0,
@@ -948,6 +959,7 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev)
                                 event[i].data, event[i].obj,
                                 event[i].res, event[i].res2);
 
+                /*data成员指向这个异步I/O事件对应着的实际事件*/
                 e = (ngx_event_t *) (uintptr_t) event[i].data;
 
                 e->complete = 1;
@@ -957,6 +969,7 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev)
                 aio = e->data;
                 aio->res = event[i].res;
 
+                /*将该事件放到 ngx_posted_events 队列中延后执行*/
                 ngx_post_event(e, &ngx_posted_events);
             }
 
