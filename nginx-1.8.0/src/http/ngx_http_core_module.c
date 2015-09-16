@@ -892,24 +892,32 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "generic phase: %ui", r->phase_handler);
 
+    /*调用这一阶段中个HTTP模块添加的handler处理方法*/
     rc = ph->handler(r);
 
+    /*如果handler方法返回NGX_OK，之后进入下一个阶段处理，而不会理会当前阶段是否还有其他的处理方法*/
     if (rc == NGX_OK) {
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
 
+    /*
+     *如果handler方法返回 NGX_DECLINED，那么将进入下一个处理方法，这个处理方法既可能属于当前阶段，也可能属于下一个阶段
+     *注意返回 NGX_OK 与 NGX_DECLINED 之间的区别
+     */
     if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
     }
 
+    /*如果handler方法返回 NGX_AGAIN 或者 NGX_DONE，那么当前请求仍然停留在这一个处理阶段中*/
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
         return NGX_OK;
     }
 
     /* rc == NGX_ERROR || rc == NGX_HTTP_...  */
 
+    /*如果handler方法返回 NGX_ERROR 或者类似 NGX_HTTP_开头的返回吗，则调用 ngx_http_finalize_request 结束请求*/
     ngx_http_finalize_request(r, rc);
 
     return NGX_OK;
@@ -2959,7 +2967,9 @@ ngx_http_get_forwarded_addr_internal(ngx_http_request_t *r, ngx_addr_t *addr,
     return NGX_DECLINED;
 }
 
-
+/*
+ * 解析server{}块
+ */
 static char *
 ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -2969,7 +2979,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     ngx_conf_t                   pcf;
     ngx_http_module_t           *module;
     struct sockaddr_in          *sin;
-    ngx_http_conf_ctx_t         *ctx, *http_ctx;
+    ngx_http_conf_ctx_t         *ctx, *http_ctx;    //ctx为属于该server块的 ngx_http_conf_ctx_t
     ngx_http_listen_opt_t        lsopt;
     ngx_http_core_srv_conf_t    *cscf, **cscfp;
     ngx_http_core_main_conf_t   *cmcf;
@@ -2980,10 +2990,11 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     http_ctx = cf->ctx;                         //全局http module 配置
-    ctx->main_conf = http_ctx->main_conf;
+    ctx->main_conf = http_ctx->main_conf;       //server块所属ctx的main_conf与全局共享，指向http_ctx main
 
     /* the server{}'s srv_conf */
 
+    /*分配空间*/
     ctx->srv_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->srv_conf == NULL) {
         return NGX_CONF_ERROR;
@@ -2996,6 +3007,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
+    /*创建配置项*/
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;
@@ -3025,18 +3037,18 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     /* the server configuration context */
 
-    cscf = ctx->srv_conf[ngx_http_core_module.ctx_index];
+    cscf = ctx->srv_conf[ngx_http_core_module.ctx_index];           //ngx_http_core_module server块相关配置项
     cscf->ctx = ctx;
 
 
-    cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
+    cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];          //ngx_http_core_module main级别配置项
 
-    cscfp = ngx_array_push(&cmcf->servers);
+    cscfp = ngx_array_push(&cmcf->servers);                         //取一个server配置块即 ngx_http_core_srv_conf_t 结构体指针
     if (cscfp == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    *cscfp = cscf;
+    *cscfp = cscf;                                                  //指针赋值，实际上 ngx_http_core_srv_conf_t 所指为 server块所有的ngx_http_conf_ctx_t下属的 srv 配置的一项
 
 
     /* parse inside server{} */
@@ -3086,7 +3098,9 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     return rv;
 }
 
-
+/*
+ * 解析location配置块
+ */
 static char *
 ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -3097,7 +3111,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     ngx_uint_t                 i;
     ngx_conf_t                 save;
     ngx_http_module_t         *module;
-    ngx_http_conf_ctx_t       *ctx, *pctx;
+    ngx_http_conf_ctx_t       *ctx, *pctx;          //ctx 属于该location块的 ngx_http_conf_ctx_t
     ngx_http_core_loc_conf_t  *clcf, *pclcf;
 
     ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
@@ -3105,15 +3119,16 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    pctx = cf->ctx;
-    ctx->main_conf = pctx->main_conf;
-    ctx->srv_conf = pctx->srv_conf;
+    pctx = cf->ctx;                                 //上级ngx_http_conf_ctx_t
+    ctx->main_conf = pctx->main_conf;               //指向上级 main_conf
+    ctx->srv_conf = pctx->srv_conf;                 //指向上级 srv_conf
 
     ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->loc_conf == NULL) {
         return NGX_CONF_ERROR;
     }
 
+    /*创建loc配置项*/
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;
@@ -3130,8 +3145,8 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
-    clcf->loc_conf = ctx->loc_conf;
+    clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];       //ngx_http_core_loc_conf_t 指针
+    clcf->loc_conf = ctx->loc_conf;                             //存放所有loc_conf的指针数组
 
     value = cf->args->elts;
 
@@ -3215,7 +3230,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
+    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];                 //上级server块中的loc配置项的 ngx_http_core_loc_conf_t
 
     if (pclcf->name.len) {
 
@@ -3429,7 +3444,9 @@ ngx_http_core_postconfiguration(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-
+/*
+ * 初始化 ngx_http_core_module main级别培训项
+ */
 static void *
 ngx_http_core_create_main_conf(ngx_conf_t *cf)
 {
@@ -3440,6 +3457,7 @@ ngx_http_core_create_main_conf(ngx_conf_t *cf)
         return NULL;
     }
 
+    /*初始化 ngx_http_core_main_conf_t 配置项 servers 个数*/
     if (ngx_array_init(&cmcf->servers, cf->pool, 4,
                        sizeof(ngx_http_core_srv_conf_t *))
         != NGX_OK)

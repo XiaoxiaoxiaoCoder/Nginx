@@ -115,45 +115,123 @@ typedef struct {
 
 
 typedef enum {
+    /*
+     *在接收到完成的HTTP头部后处理的HTTP阶段
+     */
     NGX_HTTP_POST_READ_PHASE = 0,
 
+    /*
+     *在将请求的URL与location表达式匹配前，修改请求的URL(所谓的重定向)是一个独立的HTTP阶段
+     */
     NGX_HTTP_SERVER_REWRITE_PHASE,
 
+    /*
+     *根据请求的URI寻找匹配的location表达式，这个阶段只能由ngx_http_core_module模块实现，不建议其他HTTP模块重新定义这一阶段的行为
+     */
     NGX_HTTP_FIND_CONFIG_PHASE,
+
+    /*
+     *在NGX_HTTP_FIND_CONFIG_PHASE阶段寻找到匹配的location之后再修改请求的URL
+     */
     NGX_HTTP_REWRITE_PHASE,
+
+    /*
+     *这一阶段用于在rewrite重写URL后，防止错误的nginx.conf配置导致死循环(递归的修改URL)，因此，这一阶段仅有ngx_http_core_module模块处理
+     *目前，控制死循环的方式很简单，首先检查rewrite的次数，如果一个请求超过10次重定向，就认为进入了rewrite死循环，这时在NGX_HTTP_POST_REWRITE_PHASE
+     *阶段就会向用户返回500，表示服务器内部错误
+     */
     NGX_HTTP_POST_REWRITE_PHASE,
 
+    /*
+     *表示在处理NGX_HTTP_ACCESS_PHASE阶段决定请求的访问权限，HTTP模块可以介入的处理阶段
+     */
     NGX_HTTP_PREACCESS_PHASE,
 
+    /*
+     *这个阶段用于让HTTP模块判断是否允许这个请求访问Nginx服务器
+     */
     NGX_HTTP_ACCESS_PHASE,
+
+    /*
+     *在NGX_HTTP+_ACCESS_PHASE阶段中，当HTTP模块的handler处理函数返回不允许访问的错误码时(实际就是NGX_HTTP_FORBIDDEN或者NGX_HTTP_UNAUTHORIZED)
+     *这里将负责向用户发送拒绝服务的错误响应。因此，这个阶段实际上用于给NGX_HTTP_ACCESS_PHASE阶段收尾
+     */
     NGX_HTTP_POST_ACCESS_PHASE,
 
+    /*
+     *这个阶段完全是为 try_files 配置项而设立的，当HTTP请求访问静态文件资源时，try_files配置项可以使这个请求顺序地访问多个静态文件资源，
+     *如果某一次访问失败，则继续访问try_files中指定的下一个静态资源。这个功能呢完全是在NGX_HTTP_TRY_FILES_PHASE阶段中实现的            
+     */
     NGX_HTTP_TRY_FILES_PHASE,
+
+    /*
+     *用于处理HTTP请求内容阶段，这是大部分HTTP模块最愿意介入的阶段
+     */
     NGX_HTTP_CONTENT_PHASE,
 
+    /*
+     *处理完请求后记录日志的阶段。例如， ngx_http_log_module模块就在这个阶段加入一个handerl处理方法，使得每个HTTP请求处理完毕后会记录access_log访问日志
+     */
     NGX_HTTP_LOG_PHASE
 } ngx_http_phases;
 
 typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
 
+/*
+ *一个HTTP处理阶段中的checker检查方法，仅可以由HTTP框架实现，以此控制HTTP请求的处理流程
+ */
 typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph);
 
+/*
+ *ngx_http_phase_handler_t 结构体仅表示处理阶段中的一个处理方法
+ */
 struct ngx_http_phase_handler_s {
+    /*
+     *在处理到某一个HTTP阶段时，HTTP框架会在checker方法已实现的前提下首先调用checker方法来处理请求
+     *而不会直接调用任何阶段中的handler方法，只有在checker方法中才会去调用handler方法。因此，事实上
+     *所有的checker方法都由框架中的ngx_http_core_module模块实现的，且普通的HTTP模块无法重定义checker方法
+     */
     ngx_http_phase_handler_pt  checker;
+
+    /*
+     *除ngx_http_core_module模块以外的HTTP模块，只能通过定义handler方法才能介入某一个HTTP处理阶段以处理请求
+     */
     ngx_http_handler_pt        handler;
+
+    //将要执行的下一个HTTP处理阶段的序号
+    /*
+     *next的设计使得处理阶段不必安顺序依次执行，既可以向后跳跃数个阶段继续执行，也可以跳跃到之前曾经执行过得
+     *某个阶段重新执行。通常，next表示下一个处理阶段中的第1个ngx_http_phase_handler_t处理方法
+     */
     ngx_uint_t                 next;
 };
 
 
 typedef struct {
+    /*
+     *handlers是由ngx_http_phase_handler_t 构成的数组首地址，它表示一个请求可能经历的所有ngx_http_handler_pt 处理方法
+     */
     ngx_http_phase_handler_t  *handlers;
+
+    /*
+     *表示NGX_HTTP_SERVER_REWRITE_PHASE阶段第1个ngx_http_phase_handler_t处理方法在handler数组中的序号，用于在执行HTTP请求
+     *的任何阶段中快速跳转到NGX_HTTP_SERVER_REWRITE_PHASE阶段处理请求
+     */
     ngx_uint_t                 server_rewrite_index;
+
+    /*
+     *表示NGX_HTTP_REWRITE_PHASE阶段第1个ngx_http_phase_handler_t 处理方法在handlers数组中的序号，用于执行HTTP请求的任何阶段
+     *快速跳转到NGX_HTTP_REWRITE_PHASE阶段处理请求
+     */
     ngx_uint_t                 location_rewrite_index;
 } ngx_http_phase_engine_t;
 
 
 typedef struct {
+    /*
+     *handlers动态数组保存着每一个HTTP模块初始化时添加到当前阶段的处理方法
+     */
     ngx_array_t                handlers;
 } ngx_http_phase_t;
 
@@ -318,26 +396,70 @@ typedef struct {
 
 
 typedef struct {
+    /*
+     *socket地址家族
+     */
     ngx_int_t                  family;
+
+    /*
+     *监听端口
+     */
     in_port_t                  port;
+
+    /*
+     *监听的端口下对应的所有ngx_http_conf_addr_t 地址
+     */
     ngx_array_t                addrs;     /* array of ngx_http_conf_addr_t */
 } ngx_http_conf_port_t;
 
 
 typedef struct {
+    /*
+     *监听套接字的各种属性
+     */
     ngx_http_listen_opt_t      opt;
 
+    /*
+     *以下3个散列表用于加速寻找到对应监听端口上的新连接，确定到底用哪个server{}虚拟主机下的配置来处理它。
+     *所以，散列表的值就是 ngx_http_core_srv_conf_t 结构体的地址
+     */
+
+    /*
+     *完全匹配 server name的散列表
+     */
     ngx_hash_t                 hash;
+
+    /*
+     *通配符前置的散列表
+     */
     ngx_hash_wildcard_t       *wc_head;
+
+    /*
+     *通配符后置的散列表
+     */
     ngx_hash_wildcard_t       *wc_tail;
 
 #if (NGX_PCRE)
+    /*
+     *下面gegex数组中元素的个数
+     */
     ngx_uint_t                 nregex;
+
+    /*
+     *regex指令静态数组，其数组成员就是ngx_http_server_name_t 结构体，表示正则表达式及其匹配的server{}虚拟主机
+     */
     ngx_http_server_name_t    *regex;
 #endif
 
     /* the default server configuration for this address:port */
+    /*
+     *该监听端口下对应的默认server{}虚拟主机
+     */
     ngx_http_core_srv_conf_t  *default_server;
+
+    /*
+     *server动态数组中的成员将指向ngx_http_core_srv_conf_t 结构体
+     */
     ngx_array_t                servers;  /* array of ngx_http_core_srv_conf_t */
 } ngx_http_conf_addr_t;
 
@@ -361,6 +483,7 @@ typedef struct {
 
 
 struct ngx_http_core_loc_conf_s {
+    /*location的名称，即 nginx.conf 中 location后的表达式*/
     ngx_str_t     name;          /* location name */
 
 #if (NGX_PCRE)
@@ -388,6 +511,10 @@ struct ngx_http_core_loc_conf_s {
 #endif
 
     /* pointer to the modules' loc_conf */
+    /*
+     *指向所属location块内 ngx_http_conf_ctx_t 结构体重的 loc_conf 指针数组，它
+     *保存当前location块内所有 HTTP 模块 create_loc_conf 方法产生的结构体指针        
+     */
     void        **loc_conf;
 
     uint32_t      limit_except;
@@ -494,6 +621,10 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    types_hash_max_size;
     ngx_uint_t    types_hash_bucket_size;
 
+    /*
+     *将同一个server块内多个表达式location块的 ngx_http_core_lco_conf_t 结构体以
+     *双链表方式组织起来，该location指针将指向 ngx_http_location_queue_t 结构体
+     */
     ngx_queue_t  *locations;
 
 #if 0
@@ -503,9 +634,24 @@ struct ngx_http_core_loc_conf_s {
 
 
 typedef struct {
+    /*
+     *queue将作为 ngx_queue_t 双向链表容器，从而将 ngx_http_location_queue_t 结构连接起来
+     */
     ngx_queue_t                      queue;
+
+    /*
+     *如果location中的字符串可以精确匹配(包括正则表达式)，exact将指向对应的ngx_http_core_loc_conf_t 结构体，否则为NULL
+     */
     ngx_http_core_loc_conf_t        *exact;
+
+    /*
+     *如果location中的字符串无法精确匹配(包括了自定义的通配符),inclusive将指向ngx_http_location_queue_t结构体，否则为NULL
+     */
     ngx_http_core_loc_conf_t        *inclusive;
+
+    /*
+     *指向location名称
+     */
     ngx_str_t                       *name;
     u_char                          *file_name;
     ngx_uint_t                       line;

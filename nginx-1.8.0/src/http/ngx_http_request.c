@@ -191,6 +191,9 @@ ngx_http_header_t  ngx_http_headers_in[] = {
 };
 
 
+/*
+ * 初始化 http connection 连接
+ */
 void
 ngx_http_init_connection(ngx_connection_t *c)
 {
@@ -385,6 +388,9 @@ ngx_http_wait_request_handler(ngx_event_t *rev)
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "http wait request handler");
 
+    /*
+     *检查是否超时
+     */
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
         ngx_http_close_connection(c);
